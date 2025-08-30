@@ -14,6 +14,7 @@ export default function PublicProfilePage({ params }: { params: { username: stri
   const [isOwnProfile, setIsOwnProfile] = useState(false)
   const [profileId, setProfileId] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [ensIdentity, setEnsIdentity] = useState("")
   const router = useRouter()
   const searchParams = useSearchParams()
 
@@ -34,6 +35,16 @@ export default function PublicProfilePage({ params }: { params: { username: stri
       } = await supabase.auth.getUser()
       setCurrentUser(authUser)
       console.log("[v0] Auth user:", authUser ? "authenticated" : "guest")
+
+      if (authUser) {
+        const { data: userProfile } = await supabase.from("users").select("username").eq("id", authUser.id).single()
+
+        if (!userProfile?.username) {
+          console.log("[v0] New user without username, redirecting to setup")
+          router.push("/username-setup")
+          return
+        }
+      }
 
       let profileData = null
       const socialLinksData = []
@@ -77,6 +88,7 @@ export default function PublicProfilePage({ params }: { params: { username: stri
           if (profile) {
             setProfileId(profile.id)
             profileData = profile
+            setEnsIdentity(profile.ens_identity || "")
           }
         }
       } else {
@@ -119,6 +131,7 @@ export default function PublicProfilePage({ params }: { params: { username: stri
           if (profile && profile.privacy_level === "public") {
             setProfileId(profile.id)
             profileData = profile
+            setEnsIdentity(profile.ens_identity || "")
             console.log("[v0] Using public profile:", profile.id)
           } else if (profile) {
             console.log("[v0] Profile found but not public, privacy_level:", profile.privacy_level)
@@ -175,7 +188,7 @@ export default function PublicProfilePage({ params }: { params: { username: stri
     } finally {
       setIsLoading(false)
     }
-  }, [params.username, supabase, editFromParams, isOwnProfile])
+  }, [params.username, supabase, editFromParams, isOwnProfile, router])
 
   useEffect(() => {
     loadProfileData()
@@ -234,6 +247,30 @@ export default function PublicProfilePage({ params }: { params: { username: stri
     } else {
       await navigator.clipboard.writeText(profileUrl)
       // Could add a toast notification here
+    }
+  }
+
+  const handleProfileUpdate = async (updates: Partial<any>) => {
+    if (!profileId || !isOwnProfile) return
+
+    try {
+      await supabase.from("profiles").update(updates).eq("id", profileId)
+
+      setUserData((prev) => (prev ? { ...prev, ...updates } : null))
+    } catch (error) {
+      console.error("Error updating profile:", error)
+    }
+  }
+
+  const handleEnsUpdate = async (ens: string) => {
+    if (!profileId || !isOwnProfile) return
+
+    setEnsIdentity(ens)
+
+    try {
+      await supabase.from("profiles").update({ ens_identity: ens }).eq("id", profileId)
+    } catch (error) {
+      console.error("Error updating ENS:", error)
     }
   }
 
@@ -316,6 +353,9 @@ export default function PublicProfilePage({ params }: { params: { username: stri
           profileId={profileId}
           isEditMode={isEditMode && isOwnProfile}
           onEditModeChange={setIsEditMode}
+          onProfileUpdate={handleProfileUpdate}
+          ensIdentity={ensIdentity}
+          onEnsUpdate={handleEnsUpdate}
         />
 
         {!isOwnProfile && (

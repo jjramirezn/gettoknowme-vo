@@ -19,12 +19,17 @@ export default function HomePage() {
         data: { user },
       } = await supabase.auth.getUser()
       if (user) {
-        // Redirect to their profile in edit mode
-        router.push(`/${user.user_metadata?.username || user.id}?edit=true`)
+        const { data: profile } = await supabase.from("profiles").select("username").eq("user_id", user.id).single()
+
+        if (!profile?.username || profile.username.startsWith("anon_")) {
+          router.push("/username-setup")
+        } else {
+          router.push(`/${profile.username}?edit=true`)
+        }
       }
     }
     checkUser()
-  }, [router, supabase.auth])
+  }, [router, supabase])
 
   const handleSocialLogin = async (provider: "github" | "twitter" | "instagram") => {
     setIsLoading(true)
@@ -49,9 +54,8 @@ export default function HomePage() {
       const { data, error } = await supabase.auth.signInAnonymously()
       if (error) throw error
 
-      // Redirect to profile in edit mode
       if (data.user) {
-        router.push(`/${data.user.id}?edit=true`)
+        router.push("/username-setup")
       }
     } catch (error) {
       console.error("Error:", error)

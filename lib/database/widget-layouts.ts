@@ -7,16 +7,18 @@ export interface WidgetLayoutDB {
   profile_id: string
   widget_id: string
   widget_type: string
+  platform?: string
   position_x: number
   position_y: number
   size: string
   is_visible: boolean
   created_at: string
   updated_at: string
+  custom_color?: string
 }
 
 // Convert database format to widget config format
-export function dbToWidgetConfig(dbLayout: WidgetLayoutDB, platform?: string): WidgetConfig {
+export function dbToWidgetConfig(dbLayout: WidgetLayoutDB): WidgetConfig {
   let width = 2,
     height = 2 // default medium size
 
@@ -42,10 +44,11 @@ export function dbToWidgetConfig(dbLayout: WidgetLayoutDB, platform?: string): W
   return {
     id: dbLayout.widget_id,
     type: dbLayout.widget_type as "profile" | "social" | "service",
-    platform: platform || dbLayout.widget_type,
+    platform: dbLayout.platform || dbLayout.widget_type,
     gridPosition: { x: dbLayout.position_x, y: dbLayout.position_y },
     gridSize: { width, height },
     visible: dbLayout.is_visible,
+    customColor: dbLayout.custom_color,
   }
 }
 
@@ -72,10 +75,12 @@ export function widgetConfigToDb(
     profile_id: profileId,
     widget_id: config.id,
     widget_type: config.type,
+    platform: config.platform,
     position_x: config.gridPosition.x,
     position_y: config.gridPosition.y,
     size: size,
     is_visible: config.visible,
+    custom_color: config.customColor,
   }
 }
 
@@ -94,9 +99,7 @@ export async function getWidgetLayouts(profileId: string): Promise<WidgetConfig[
     return []
   }
 
-  return data.map((layout) => {
-    return dbToWidgetConfig(layout, layout.widget_type)
-  })
+  return data.map((layout) => dbToWidgetConfig(layout))
 }
 
 export async function saveWidgetLayout(config: WidgetConfig, profileId: string): Promise<boolean> {
@@ -145,7 +148,5 @@ export async function getWidgetLayoutsServer(profileId: string): Promise<WidgetC
     return []
   }
 
-  return data.map((layout) => {
-    return dbToWidgetConfig(layout, layout.widget_type)
-  })
+  return data.map((layout) => dbToWidgetConfig(layout))
 }

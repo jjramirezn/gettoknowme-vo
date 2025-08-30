@@ -81,7 +81,7 @@ export default function SignUpPage() {
                   onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))}
                 />
                 <p className="text-xs text-muted-foreground">
-                  This will be your profile URL: gettoknowme.com/{username}
+                  This will be your profile URL: get2knowme.app/{username}
                 </p>
               </div>
               <div className="space-y-2">

@@ -15,38 +15,39 @@ interface SocialWidgetProps {
   onConfigChange: (id: string, newConfig: Partial<WidgetConfig>) => void
   isEditMode: boolean
   account: SocialAccount
+  customColor?: string // Added customColor prop for color customization
 }
 
-export function SocialWidget({ config, onConfigChange, isEditMode, account }: SocialWidgetProps) {
+export function SocialWidget({ config, onConfigChange, isEditMode, account, customColor }: SocialWidgetProps) {
   const gridWidth = config.gridSize.width
   const gridHeight = config.gridSize.height
 
   const PLATFORM_STYLES = {
     Instagram: {
-      bgColor: "bg-gradient-to-br from-purple-200 to-purple-300",
-      iconColor: "bg-gradient-to-r from-purple-500 to-pink-500",
+      bgColor: customColor ? `bg-[${customColor}]/20` : "bg-gradient-to-br from-purple-200 to-purple-300",
+      iconColor: customColor || "bg-gradient-to-r from-purple-500 to-pink-500",
       textColor: "text-purple-900",
     },
     Twitter: {
-      bgColor: "bg-gradient-to-br from-sky-200 to-blue-300",
-      iconColor: "bg-blue-500",
+      bgColor: customColor ? `bg-[${customColor}]/20` : "bg-gradient-to-br from-sky-200 to-blue-300",
+      iconColor: customColor || "bg-blue-500",
       textColor: "text-blue-900",
     },
     GitHub: {
-      bgColor: "bg-gradient-to-br from-yellow-200 to-yellow-300",
-      iconColor: "bg-gray-900",
+      bgColor: customColor ? `bg-[${customColor}]/20` : "bg-gradient-to-br from-yellow-200 to-yellow-300",
+      iconColor: customColor || "bg-gray-900",
       textColor: "text-gray-900",
     },
     TikTok: {
-      bgColor: "bg-white",
-      iconColor: "bg-black",
+      bgColor: customColor ? `bg-[${customColor}]/20` : "bg-white",
+      iconColor: customColor || "bg-black",
       textColor: "text-gray-900",
     },
   }
 
   const platformStyle = PLATFORM_STYLES[account.platform as keyof typeof PLATFORM_STYLES] || {
-    bgColor: "bg-card",
-    iconColor: account.color,
+    bgColor: customColor ? `bg-[${customColor}]/20` : "bg-card",
+    iconColor: customColor || account.color,
     textColor: "text-foreground",
   }
 
@@ -102,10 +103,12 @@ export function SocialWidget({ config, onConfigChange, isEditMode, account }: So
       onConfigChange={onConfigChange}
       isEditMode={isEditMode}
       className={platformStyle.bgColor}
+      style={customColor ? { backgroundColor: `${customColor}20` } : undefined}
     >
       <div className="flex items-center gap-3 mb-4">
         <div
-          className={`w-6 h-6 ${platformStyle.iconColor} rounded-full flex items-center justify-center text-white text-xs`}
+          className={`w-6 h-6 rounded-full flex items-center justify-center text-white text-xs`}
+          style={customColor ? { backgroundColor: customColor } : undefined}
         >
           {account.platform === "Instagram" && "📷"}
           {account.platform === "Twitter" && "🐦"}

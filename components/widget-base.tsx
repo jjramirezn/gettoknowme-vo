@@ -14,6 +14,7 @@ interface WidgetConfig {
   gridPosition: { x: number; y: number }
   gridSize: { width: number; height: number }
   visible: boolean
+  customColor?: string // Added customColor property to persist widget colors
 }
 
 interface WidgetBaseProps {
@@ -219,6 +220,7 @@ export function WidgetBase({ config, onConfigChange, isEditMode, children, class
           top: currentPosition.y,
           width: currentSize.width,
           height: currentSize.height,
+          backgroundColor: config.customColor || "transparent", // Added custom color styling
         }}
         onMouseDown={handleMouseDown}
       >

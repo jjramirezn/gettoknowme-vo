@@ -11,9 +11,13 @@ export async function GET(request: NextRequest) {
     const { data, error } = await supabase.auth.exchangeCodeForSession(code)
 
     if (!error && data.user) {
-      // Redirect to user's profile in edit mode
-      const username = data.user.user_metadata?.username || data.user.id
-      return NextResponse.redirect(`${origin}/${username}?edit=true`)
+      const { data: profile } = await supabase.from("profiles").select("username").eq("user_id", data.user.id).single()
+
+      if (!profile?.username || profile.username.startsWith("anon_")) {
+        return NextResponse.redirect(`${origin}/username-setup`)
+      } else {
+        return NextResponse.redirect(`${origin}/${profile.username}?edit=true`)
+      }
     }
   }
 
