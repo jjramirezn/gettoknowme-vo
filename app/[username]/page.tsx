@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Share2, LogOut, Edit3, Eye } from "lucide-react"
 import { WidgetGrid } from "@/components/widget-system"
+import { ColorPicker } from "@/components/ui/color-picker"
 import { createClient } from "@/lib/supabase/client"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
@@ -16,6 +17,7 @@ export default function PublicProfilePage({ params }: { params: { username: stri
   const [profileId, setProfileId] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [ensIdentity, setEnsIdentity] = useState("")
+  const [backgroundColor, setBackgroundColor] = useState("#f8fafc")
   const router = useRouter()
   const searchParams = useSearchParams()
   const { toast } = useToast()
@@ -75,6 +77,7 @@ export default function PublicProfilePage({ params }: { params: { username: stri
                 username: userProfile?.username || `user_${authUser.id.slice(0, 8)}`,
                 display_name: userProfile?.username || `User ${authUser.id.slice(0, 8)}`,
                 bio: "Welcome to my profile!",
+                background_color: "#f8fafc",
               })
               .select()
               .single()
@@ -91,6 +94,7 @@ export default function PublicProfilePage({ params }: { params: { username: stri
             setProfileId(profile.id)
             profileData = profile
             setEnsIdentity(profile.ens_identity || "")
+            setBackgroundColor(profile.background_color || "#f8fafc")
           }
         }
       } else {
@@ -134,6 +138,7 @@ export default function PublicProfilePage({ params }: { params: { username: stri
             setProfileId(profile.id)
             profileData = profile
             setEnsIdentity(profile.ens_identity || "")
+            setBackgroundColor(profile.background_color || "#f8fafc")
             console.log("[v0] Using public profile:", profile.id)
           } else if (profile) {
             console.log("[v0] Profile found but not public, privacy_level:", profile.privacy_level)
@@ -325,6 +330,28 @@ export default function PublicProfilePage({ params }: { params: { username: stri
     }
   }
 
+  const handleBackgroundColorChange = async (color: string) => {
+    if (!profileId || !isOwnProfile) return
+
+    setBackgroundColor(color)
+
+    try {
+      await supabase.from("profiles").update({ background_color: color }).eq("id", profileId)
+
+      toast({
+        title: "Background updated",
+        description: "Your background color has been saved successfully.",
+      })
+    } catch (error) {
+      console.error("Error updating background color:", error)
+      toast({
+        title: "Update failed",
+        description: "There was an error saving your background color. Please try again.",
+        variant: "destructive",
+      })
+    }
+  }
+
   const profileData = useMemo(
     () => ({
       name: userData?.displayName,
@@ -364,7 +391,7 @@ export default function PublicProfilePage({ params }: { params: { username: stri
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/5">
+    <div className="min-h-screen" style={{ backgroundColor }}>
       {isOwnProfile && (
         <header className="border-b border-border/50 backdrop-blur-sm sticky top-0 z-50 bg-background/80">
           <div className="container mx-auto px-4 py-4 flex items-center justify-between">
@@ -375,6 +402,7 @@ export default function PublicProfilePage({ params }: { params: { username: stri
               <span className="font-semibold text-sm">GetToKnowMe</span>
             </div>
             <div className="flex items-center gap-2">
+              {isEditMode && <ColorPicker value={backgroundColor} onChange={handleBackgroundColorChange} />}
               <Button
                 size="sm"
                 variant="outline"
