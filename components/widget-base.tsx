@@ -28,7 +28,7 @@ const GRID_SIZE = 120 // Each grid cell is 120px
 const GRID_GAP = 16 // Gap between grid cells
 
 function isResizeHandleClick(offsetX: number, offsetY: number, width: number, height: number): boolean {
-  const handleSize = 16
+  const handleSize = 20 // Increased handle size from 16 to 20 for easier clicking
   return offsetX >= width - handleSize && offsetY >= height - handleSize
 }
 
@@ -58,6 +58,9 @@ export function WidgetBase({ config, onConfigChange, isEditMode, children, class
     (e: React.MouseEvent) => {
       if (!isEditMode) return
       e.preventDefault()
+      e.stopPropagation() // Added stopPropagation to prevent event bubbling
+
+      console.log("[v0] Mouse down event triggered") // Added debug logging
 
       onConfigChange(config.id, { gridPosition: config.gridPosition })
 
@@ -67,7 +70,10 @@ export function WidgetBase({ config, onConfigChange, isEditMode, children, class
       const offsetX = e.clientX - rect.left
       const offsetY = e.clientY - rect.top
 
+      console.log("[v0] Click position:", { offsetX, offsetY, width: rect.width, height: rect.height }) // Added debug logging
+
       if (isResizeHandleClick(offsetX, offsetY, rect.width, rect.height)) {
+        console.log("[v0] Resize handle clicked") // Added debug logging
         setIsResizing(true)
         setResizeStart({
           x: e.clientX,
@@ -76,6 +82,7 @@ export function WidgetBase({ config, onConfigChange, isEditMode, children, class
           height: config.gridSize.height,
         })
       } else {
+        console.log("[v0] Drag initiated") // Added debug logging
         setIsDragging(true)
         setDragStart({
           x: e.clientX,
@@ -244,15 +251,29 @@ export function WidgetBase({ config, onConfigChange, isEditMode, children, class
           {/* Resize handle */}
           {isEditMode && (
             <div
-              className={`absolute bottom-0 right-0 w-4 h-4 cursor-nw-resize transition-all duration-150 ${
-                isResizing ? "bg-primary/60 scale-110" : "bg-primary/20 hover:bg-primary/40"
+              className={`absolute -bottom-0 -right-0 w-5 h-5 cursor-nw-resize transition-all duration-150 z-10 ${
+                isResizing ? "bg-primary/60 scale-110" : "bg-primary/30 hover:bg-primary/50"
               }`}
               style={{
                 clipPath: "polygon(100% 0, 0 100%, 100% 100%)",
+                bottom: "-2px",
+                right: "-2px",
+              }}
+              onMouseDown={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                console.log("[v0] Resize handle directly clicked")
+                setIsResizing(true)
+                setResizeStart({
+                  x: e.clientX,
+                  y: e.clientY,
+                  width: config.gridSize.width,
+                  height: config.gridSize.height,
+                })
               }}
             >
               <div
-                className={`absolute bottom-1 right-1 w-1 h-1 bg-primary rounded-full transition-all ${
+                className={`absolute bottom-1 right-1 w-1.5 h-1.5 bg-primary rounded-full transition-all ${
                   isResizing ? "scale-125" : ""
                 }`}
               />
