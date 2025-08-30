@@ -11,9 +11,12 @@ export default function HomePage() {
           <Globe className="w-10 h-10 text-white" />
         </div>
 
-        {/* Hero Image Placeholder */}
-        <div className="w-64 h-64 mx-auto mb-8 rounded-3xl bg-gradient-to-br from-primary/20 via-secondary/20 to-primary/10 flex items-center justify-center shadow-xl">
-          <div className="text-6xl">🌟</div>
+        <div className="w-64 h-64 mx-auto mb-8 rounded-3xl overflow-hidden shadow-xl">
+          <img
+            src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/photo_2025-08-30_10-52-24.jpg-2CMnOAqPbMZsMCo8VRr7ZHEpF1XNZ8.jpeg"
+            alt="G2M Logo"
+            className="w-full h-full object-cover"
+          />
         </div>
 
         {/* Catchy Tagline */}
