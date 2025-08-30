@@ -43,6 +43,11 @@ export function SocialWidget({ config, onConfigChange, isEditMode, account, cust
       iconColor: customColor || "bg-black",
       textColor: "text-gray-900",
     },
+    YouTube: {
+      bgColor: customColor ? `bg-[${customColor}]/20` : "bg-red-200",
+      iconColor: customColor || "bg-red-500",
+      textColor: "text-red-900",
+    },
   }
 
   const platformStyle = PLATFORM_STYLES[account.platform as keyof typeof PLATFORM_STYLES] || {
@@ -55,9 +60,24 @@ export function SocialWidget({ config, onConfigChange, isEditMode, account, cust
   const ENHANCED_MOCK_DATA = {
     Instagram: {
       recentPosts: [
-        { image: "/vibrant-coastal-sunset.png", likes: "2.1K", comments: "89" },
-        { image: "/steaming-coffee-cup.png", likes: "1.8K", comments: "67" },
-        { image: "/vibrant-cityscape.png", likes: "3.2K", comments: "124" },
+        {
+          image:
+            "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/photo_2025-08-30_19-14-57.jpg-NbJZnf7aB2jncNiLBm2AgNaU9E41bb.jpeg",
+          likes: "2.1K",
+          comments: "89",
+        },
+        {
+          image:
+            "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/photo_2025-08-30_19-14-51.jpg-lC1OeE6lYpEdpWY9Gv9NvWiAYccuqH.jpeg",
+          likes: "1.8K",
+          comments: "67",
+        },
+        {
+          image:
+            "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/photo_2025-08-30_19-14-46.jpg-kLehh4UkdAyQ6ntjrYo68qLj2iWeYV.jpeg",
+          likes: "3.2K",
+          comments: "124",
+        },
       ],
     },
     Twitter: {
@@ -86,11 +106,42 @@ export function SocialWidget({ config, onConfigChange, isEditMode, account, cust
       contributions: "1,247 contributions in the last year",
       streak: "47 day streak",
       topRepo: "awesome-project",
+      languages: ["TypeScript", "React", "Python"],
     },
     TikTok: {
       recentVideos: [
-        { thumbnail: "/steaming-coffee-cup.png", views: "2.1M", title: "5 healthy habits 💪" },
-        { thumbnail: "/vibrant-cityscape.png", views: "890K", title: "Day in my life" },
+        {
+          thumbnail:
+            "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/photo_2025-08-30_19-14-40.jpg-Q6gIOOAVH6BKww9ypJ7kzXcTB77eT9.jpeg",
+          views: "2.1M",
+          title: "Follow for more tips! 💡",
+          duration: "0:15",
+        },
+        {
+          thumbnail:
+            "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/photo_2025-08-30_19-14-57.jpg-NbJZnf7aB2jncNiLBm2AgNaU9E41bb.jpeg",
+          views: "890K",
+          title: "Day in my life ⚽️",
+          duration: "0:30",
+        },
+      ],
+    },
+    YouTube: {
+      recentVideos: [
+        {
+          thumbnail:
+            "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/photo_2025-08-30_19-14-46.jpg-kLehh4UkdAyQ6ntjrYo68qLj2iWeYV.jpeg",
+          title: "Epic Mountain Adventure",
+          views: "45K",
+          duration: "12:34",
+        },
+        {
+          thumbnail:
+            "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/photo_2025-08-30_19-14-51.jpg-lC1OeE6lYpEdpWY9Gv9NvWiAYccuqH.jpeg",
+          title: "European Street Food Tour",
+          views: "32K",
+          duration: "8:21",
+        },
       ],
     },
   }
@@ -114,6 +165,7 @@ export function SocialWidget({ config, onConfigChange, isEditMode, account, cust
           {account.platform === "Twitter" && "🐦"}
           {account.platform === "GitHub" && <span className="text-white">💻</span>}
           {account.platform === "TikTok" && "🎵"}
+          {account.platform === "YouTube" && "📺"}
         </div>
         <div>
           <h3 className={`font-semibold text-sm ${platformStyle.textColor}`}>
@@ -123,7 +175,9 @@ export function SocialWidget({ config, onConfigChange, isEditMode, account, cust
                 ? "Github.com/gettoknowme"
                 : account.platform === "TikTok"
                   ? "tiktok.com/gettoknowme"
-                  : account.platform}
+                  : account.platform === "YouTube"
+                    ? "YouTube.com/gettoknowme"
+                    : account.platform}
           </h3>
         </div>
       </div>
@@ -134,10 +188,18 @@ export function SocialWidget({ config, onConfigChange, isEditMode, account, cust
             {mockData?.recentPosts?.map((post, index) => (
               <div key={index} className="aspect-square relative group cursor-pointer">
                 <img
-                  src={post.image || "/placeholder.svg?height=100&width=100&query=instagram post"}
+                  src={post.image || "/placeholder.svg"}
                   alt="Instagram post"
                   className="w-full h-full object-cover rounded-lg"
                 />
+                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center">
+                  <div className="text-white text-xs text-center">
+                    <div className="flex items-center gap-2">
+                      <span>❤️ {post.likes}</span>
+                      <span>💬 {post.comments}</span>
+                    </div>
+                  </div>
+                </div>
               </div>
             ))}
           </div>
@@ -145,7 +207,7 @@ export function SocialWidget({ config, onConfigChange, isEditMode, account, cust
 
         {account.platform === "Twitter" && (
           <div className="space-y-2">
-            {mockData?.recentPosts?.slice(0, 3).map((post, index) => (
+            {mockData?.recentPosts?.slice(0, gridHeight > 2 ? 3 : 2).map((post, index) => (
               <div key={index} className="bg-gray-900 rounded-lg p-3 text-white text-xs">
                 <div className="flex items-start gap-2 mb-2">
                   <div className="w-6 h-6 bg-blue-500 rounded-full flex-shrink-0"></div>
@@ -156,6 +218,14 @@ export function SocialWidget({ config, onConfigChange, isEditMode, account, cust
                       <span className="text-gray-400">{post.time}</span>
                     </div>
                     <p className="leading-relaxed">{post.text}</p>
+                    <div className="flex items-center gap-4 mt-2 text-gray-400">
+                      <span className="flex items-center gap-1">
+                        <span>💬</span> {post.retweets}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <span>❤️</span> {post.likes}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -172,22 +242,34 @@ export function SocialWidget({ config, onConfigChange, isEditMode, account, cust
             </div>
             <div className="bg-gray-900 rounded-lg p-3">
               <div className="grid grid-cols-12 gap-1 mb-2">
-                {Array.from({ length: 84 }, (_, i) => (
-                  <div
-                    key={i}
-                    className={`w-2 h-2 rounded-sm ${
-                      Math.random() > 0.7
-                        ? "bg-green-500"
-                        : Math.random() > 0.5
-                          ? "bg-green-400"
-                          : Math.random() > 0.3
-                            ? "bg-green-300"
-                            : "bg-gray-700"
-                    }`}
-                  />
+                {Array.from({ length: 84 }, (_, i) => {
+                  const intensity = Math.random()
+                  return (
+                    <div
+                      key={i}
+                      className={`w-2 h-2 rounded-sm ${
+                        intensity > 0.8
+                          ? "bg-green-500"
+                          : intensity > 0.6
+                            ? "bg-green-400"
+                            : intensity > 0.4
+                              ? "bg-green-300"
+                              : intensity > 0.2
+                                ? "bg-green-200"
+                                : "bg-gray-700"
+                      }`}
+                    />
+                  )
+                })}
+              </div>
+              <p className="text-xs text-gray-300 text-center mb-2">1,247 contributions in the last year</p>
+              <div className="flex justify-center gap-2">
+                {mockData?.languages?.map((lang, index) => (
+                  <span key={index} className="text-xs bg-gray-700 text-gray-300 px-2 py-1 rounded">
+                    {lang}
+                  </span>
                 ))}
               </div>
-              <p className="text-xs text-gray-300 text-center">1,247 contributions in the last year</p>
             </div>
           </div>
         )}
@@ -197,14 +279,49 @@ export function SocialWidget({ config, onConfigChange, isEditMode, account, cust
             {mockData?.recentVideos?.map((video, index) => (
               <div key={index} className="aspect-[3/4] relative group cursor-pointer">
                 <img
-                  src={video.thumbnail || "/placeholder.svg?height=120&width=90&query=tiktok video"}
+                  src={video.thumbnail || "/placeholder.svg"}
                   alt="TikTok video"
                   className="w-full h-full object-cover rounded-lg"
                 />
+                <div className="absolute inset-0 bg-black/20 rounded-lg"></div>
+                <div className="absolute top-2 right-2 bg-black/70 text-white text-xs px-1 py-0.5 rounded">
+                  {video.duration}
+                </div>
                 <div className="absolute bottom-2 left-2 right-2">
-                  <p className="text-white text-xs font-medium bg-black/50 rounded px-1 py-0.5 truncate">
+                  <p className="text-white text-xs font-medium bg-black/70 rounded px-2 py-1 truncate mb-1">
                     {video.title}
                   </p>
+                  <p className="text-white text-xs bg-black/70 rounded px-2 py-0.5">{video.views} views</p>
+                </div>
+                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="w-8 h-8 bg-white/90 rounded-full flex items-center justify-center">
+                    <span className="text-black text-sm">▶️</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {account.platform === "YouTube" && (
+          <div className="space-y-2">
+            {mockData?.recentVideos?.map((video, index) => (
+              <div key={index} className="flex gap-3 group cursor-pointer">
+                <div className="w-20 h-12 relative flex-shrink-0">
+                  <img
+                    src={video.thumbnail || "/placeholder.svg"}
+                    alt="YouTube video"
+                    className="w-full h-full object-cover rounded"
+                  />
+                  <div className="absolute bottom-1 right-1 bg-black/80 text-white text-xs px-1 rounded">
+                    {video.duration}
+                  </div>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h4 className="text-sm font-medium text-gray-900 line-clamp-2 group-hover:text-red-600 transition-colors">
+                    {video.title}
+                  </h4>
+                  <p className="text-xs text-gray-600 mt-1">{video.views} views</p>
                 </div>
               </div>
             ))}
