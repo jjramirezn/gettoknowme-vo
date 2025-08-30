@@ -16,9 +16,17 @@ interface SocialWidgetProps {
   isEditMode: boolean
   account: SocialAccount
   customColor?: string // Added customColor prop for color customization
+  allWidgets?: WidgetConfig[] // Added allWidgets prop for collision detection
 }
 
-export function SocialWidget({ config, onConfigChange, isEditMode, account, customColor }: SocialWidgetProps) {
+export function SocialWidget({
+  config,
+  onConfigChange,
+  isEditMode,
+  account,
+  customColor,
+  allWidgets,
+}: SocialWidgetProps) {
   const gridWidth = config.gridSize.width
   const gridHeight = config.gridSize.height
 
@@ -155,6 +163,7 @@ export function SocialWidget({ config, onConfigChange, isEditMode, account, cust
       isEditMode={isEditMode}
       className={platformStyle.bgColor}
       style={customColor ? { backgroundColor: `${customColor}20` } : undefined}
+      allWidgets={allWidgets} // Pass allWidgets prop to WidgetBase for collision detection
     >
       <div className="flex items-center gap-3 mb-4">
         <div

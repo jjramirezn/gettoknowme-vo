@@ -55,13 +55,15 @@ function CalendlyWidget({
   config,
   onConfigChange,
   isEditMode,
+  allWidgets,
 }: {
   config: WidgetConfig
   onConfigChange: (id: string, newConfig: Partial<WidgetConfig>) => void
   isEditMode: boolean
+  allWidgets?: WidgetConfig[]
 }) {
   return (
-    <WidgetBase config={config} onConfigChange={onConfigChange} isEditMode={isEditMode}>
+    <WidgetBase config={config} onConfigChange={onConfigChange} isEditMode={isEditMode} allWidgets={allWidgets}>
       <div className="flex items-center gap-2 mb-3">
         <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center text-white text-sm">📅</div>
         <div>
@@ -90,10 +92,12 @@ function CafecitoWidget({
   config,
   onConfigChange,
   isEditMode,
+  allWidgets,
 }: {
   config: WidgetConfig
   onConfigChange: (id: string, newConfig: Partial<WidgetConfig>) => void
   isEditMode: boolean
+  allWidgets?: WidgetConfig[]
 }) {
   return (
     <WidgetBase
@@ -101,6 +105,7 @@ function CafecitoWidget({
       onConfigChange={onConfigChange}
       isEditMode={isEditMode}
       className="!w-[250px] !h-[80px]"
+      allWidgets={allWidgets}
     >
       <div className="flex items-center justify-between h-full">
         <div className="flex items-center gap-2">
@@ -455,6 +460,7 @@ export function WidgetGrid({
                     isEditMode={isEditMode}
                     account={account}
                     customColor={config.customColor}
+                    allWidgets={widgetConfigs}
                   />
                 )
               } else if (config.platform === "calendly") {
@@ -464,6 +470,7 @@ export function WidgetGrid({
                     config={config}
                     onConfigChange={handleConfigChange}
                     isEditMode={isEditMode}
+                    allWidgets={widgetConfigs}
                   />
                 )
               } else if (config.platform === "cafecito") {
@@ -473,6 +480,7 @@ export function WidgetGrid({
                     config={config}
                     onConfigChange={handleConfigChange}
                     isEditMode={isEditMode}
+                    allWidgets={widgetConfigs}
                   />
                 )
               }

@@ -23,6 +23,7 @@ interface WidgetBaseProps {
   isEditMode: boolean
   children: React.ReactNode
   className?: string
+  allWidgets?: WidgetConfig[] // Added allWidgets prop to enable collision detection
 }
 
 const GRID_SIZE = 120 // Each grid cell is 120px
@@ -33,7 +34,85 @@ function isResizeHandleClick(offsetX: number, offsetY: number, width: number, he
   return offsetX >= width - handleSize && offsetY >= height - handleSize
 }
 
-export function WidgetBase({ config, onConfigChange, isEditMode, children, className = "" }: WidgetBaseProps) {
+function checkCollision(
+  widget1: { x: number; y: number; width: number; height: number },
+  widget2: { x: number; y: number; width: number; height: number },
+): boolean {
+  return !(
+    widget1.x + widget1.width <= widget2.x ||
+    widget2.x + widget2.width <= widget1.x ||
+    widget1.y + widget1.height <= widget2.y ||
+    widget2.y + widget2.height <= widget1.y
+  )
+}
+
+function findNearestAvailablePosition(
+  desiredPosition: { x: number; y: number },
+  size: { width: number; height: number },
+  allWidgets: WidgetConfig[],
+  currentWidgetId: string,
+): { x: number; y: number } {
+  const otherWidgets = allWidgets.filter((w) => w.id !== currentWidgetId && w.visible)
+
+  // Check if desired position is available
+  const hasCollision = otherWidgets.some((widget) =>
+    checkCollision(
+      { x: desiredPosition.x, y: desiredPosition.y, width: size.width, height: size.height },
+      {
+        x: widget.gridPosition.x,
+        y: widget.gridPosition.y,
+        width: widget.gridSize.width,
+        height: widget.gridSize.height,
+      },
+    ),
+  )
+
+  if (!hasCollision) {
+    return desiredPosition
+  }
+
+  // Find nearest available position in expanding spiral pattern
+  for (let radius = 1; radius <= 10; radius++) {
+    for (let dx = -radius; dx <= radius; dx++) {
+      for (let dy = -radius; dy <= radius; dy++) {
+        if (Math.abs(dx) !== radius && Math.abs(dy) !== radius) continue
+
+        const testPosition = {
+          x: Math.max(0, desiredPosition.x + dx),
+          y: Math.max(0, desiredPosition.y + dy),
+        }
+
+        const testHasCollision = otherWidgets.some((widget) =>
+          checkCollision(
+            { x: testPosition.x, y: testPosition.y, width: size.width, height: size.height },
+            {
+              x: widget.gridPosition.x,
+              y: widget.gridPosition.y,
+              width: widget.gridSize.width,
+              height: widget.gridSize.height,
+            },
+          ),
+        )
+
+        if (!testHasCollision) {
+          return testPosition
+        }
+      }
+    }
+  }
+
+  // Fallback to original position if no space found
+  return desiredPosition
+}
+
+export function WidgetBase({
+  config,
+  onConfigChange,
+  isEditMode,
+  children,
+  className = "",
+  allWidgets = [],
+}: WidgetBaseProps) {
   const [isDragging, setIsDragging] = useState(false)
   const [isResizing, setIsResizing] = useState(false)
   const [dragStart, setDragStart] = useState({ x: 0, y: 0, gridX: 0, gridY: 0 })
@@ -109,10 +188,17 @@ export function WidgetBase({ config, onConfigChange, isEditMode, children, class
           const deltaX = e.clientX - dragStart.x
           const deltaY = e.clientY - dragStart.y
 
-          const newGridX = Math.max(0, Math.round(dragStart.gridX + deltaX / (GRID_SIZE + GRID_GAP)))
-          const newGridY = Math.max(0, Math.round(dragStart.gridY + deltaY / (GRID_SIZE + GRID_GAP)))
+          const desiredGridX = Math.max(0, Math.round(dragStart.gridX + deltaX / (GRID_SIZE + GRID_GAP)))
+          const desiredGridY = Math.max(0, Math.round(dragStart.gridY + deltaY / (GRID_SIZE + GRID_GAP)))
 
-          setDragPreview({ x: newGridX, y: newGridY })
+          const availablePosition = findNearestAvailablePosition(
+            { x: desiredGridX, y: desiredGridY },
+            config.gridSize,
+            allWidgets,
+            config.id,
+          )
+
+          setDragPreview(availablePosition)
         } else if (isResizing) {
           const deltaX = e.clientX - resizeStart.x
           const deltaY = e.clientY - resizeStart.y
@@ -120,11 +206,26 @@ export function WidgetBase({ config, onConfigChange, isEditMode, children, class
           const newWidth = Math.max(1, Math.round(resizeStart.width + deltaX / (GRID_SIZE + GRID_GAP)))
           const newHeight = Math.max(1, Math.round(resizeStart.height + deltaY / (GRID_SIZE + GRID_GAP)))
 
-          setResizePreview({ width: newWidth, height: newHeight })
+          const otherWidgets = allWidgets.filter((w) => w.id !== config.id && w.visible)
+          const wouldCollide = otherWidgets.some((widget) =>
+            checkCollision(
+              { x: config.gridPosition.x, y: config.gridPosition.y, width: newWidth, height: newHeight },
+              {
+                x: widget.gridPosition.x,
+                y: widget.gridPosition.y,
+                width: widget.gridSize.width,
+                height: widget.gridSize.height,
+              },
+            ),
+          )
+
+          if (!wouldCollide) {
+            setResizePreview({ width: newWidth, height: newHeight })
+          }
         }
       })
     },
-    [isDragging, isResizing, isEditMode, dragStart, resizeStart],
+    [isDragging, isResizing, isEditMode, dragStart, resizeStart, config, allWidgets],
   )
 
   const handleMouseUp = useCallback(() => {
