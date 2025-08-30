@@ -4,76 +4,76 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  /* Updated to vibrant Gen Z-appealing color palette */
+  /* Updated to muted purple palette with #9C8FB7 as primary */
   --background: oklch(1 0 0); /* #ffffff */
   --foreground: oklch(0.4 0.02 258); /* #475569 - charcoal */
-  --card: oklch(0.98 0.02 330); /* #fdf2f8 - light pink */
+  --card: oklch(0.98 0.02 270); /* #f8f7fc - light purple */
   --card-foreground: oklch(0.4 0.02 258); /* #475569 - charcoal */
   --popover: oklch(1 0 0); /* #ffffff */
   --popover-foreground: oklch(0.4 0.02 258); /* #475569 - charcoal */
-  --primary: oklch(0.65 0.25 330); /* #ec4899 - vibrant pink */
+  --primary: oklch(0.65 0.15 270); /* #9C8FB7 - muted purple */
   --primary-foreground: oklch(1 0 0); /* #ffffff */
-  --secondary: oklch(0.55 0.2 270); /* #4f46e5 - vibrant indigo */
-  --secondary-foreground: oklch(1 0 0); /* #ffffff */
-  --muted: oklch(0.98 0.02 330); /* #fdf2f8 - light pink */
-  --muted-foreground: oklch(0.4 0.02 258); /* #475569 - charcoal */
-  --accent: oklch(0.55 0.2 270); /* #4f46e5 - vibrant indigo */
-  --accent-foreground: oklch(1 0 0); /* #ffffff */
+  --secondary: oklch(0.75 0.12 60); /* #F4D03F - warm yellow */
+  --secondary-foreground: oklch(0.2 0.02 258); /* #2d3748 - dark text */
+  --muted: oklch(0.96 0.02 270); /* #f3f2f7 - very light purple */
+  --muted-foreground: oklch(0.5 0.02 258); /* #64748b - medium gray */
+  --accent: oklch(0.75 0.12 60); /* #F4D03F - warm yellow */
+  --accent-foreground: oklch(0.2 0.02 258); /* #2d3748 - dark text */
   --destructive: oklch(0.55 0.25 15); /* #be123c - rose red */
   --destructive-foreground: oklch(1 0 0); /* #ffffff */
-  --border: oklch(0.92 0.005 258); /* #e5e7eb - light gray */
-  --input: oklch(0.99 0.005 258); /* #f9fafb - very light gray */
-  --ring: oklch(0.65 0.25 330); /* #ec4899 - vibrant pink */
-  --chart-1: oklch(0.65 0.25 330); /* #ec4899 - vibrant pink */
-  --chart-2: oklch(0.55 0.2 270); /* #4f46e5 - vibrant indigo */
-  --chart-3: oklch(0.6 0.15 60); /* #d97706 - orange */
+  --border: oklch(0.92 0.005 270); /* #e8e7eb - light purple-gray */
+  --input: oklch(0.99 0.005 270); /* #fafafa - very light purple-gray */
+  --ring: oklch(0.65 0.15 270); /* #9C8FB7 - muted purple */
+  --chart-1: oklch(0.65 0.15 270); /* #9C8FB7 - muted purple */
+  --chart-2: oklch(0.75 0.12 60); /* #F4D03F - warm yellow */
+  --chart-3: oklch(0.6 0.15 30); /* #d97706 - orange */
   --chart-4: oklch(0.55 0.12 80); /* #a16207 - amber */
   --chart-5: oklch(0.8 0.15 90); /* #fbbf24 - yellow */
   --radius: 0.5rem;
-  --sidebar: oklch(0.98 0.02 330); /* #fdf2f8 - light pink */
+  --sidebar: oklch(0.98 0.02 270); /* #f8f7fc - light purple */
   --sidebar-foreground: oklch(0.4 0.02 258); /* #475569 - charcoal */
-  --sidebar-primary: oklch(0.65 0.25 330); /* #ec4899 - vibrant pink */
+  --sidebar-primary: oklch(0.65 0.15 270); /* #9C8FB7 - muted purple */
   --sidebar-primary-foreground: oklch(1 0 0); /* #ffffff */
-  --sidebar-accent: oklch(0.55 0.2 270); /* #4f46e5 - vibrant indigo */
-  --sidebar-accent-foreground: oklch(1 0 0); /* #ffffff */
-  --sidebar-border: oklch(0.92 0.005 258); /* #e5e7eb - light gray */
-  --sidebar-ring: oklch(0.65 0.25 330); /* #ec4899 - vibrant pink */
+  --sidebar-accent: oklch(0.75 0.12 60); /* #F4D03F - warm yellow */
+  --sidebar-accent-foreground: oklch(0.2 0.02 258); /* #2d3748 - dark text */
+  --sidebar-border: oklch(0.92 0.005 270); /* #e8e7eb - light purple-gray */
+  --sidebar-ring: oklch(0.65 0.15 270); /* #9C8FB7 - muted purple */
 }
 
 .dark {
-  /* Updated dark mode to complement the vibrant color scheme */
+  /* Updated dark mode to complement the muted purple scheme */
   --background: oklch(0.15 0.02 258); /* Dark charcoal background */
-  --foreground: oklch(0.95 0.01 330); /* Light pink-tinted text */
-  --card: oklch(0.2 0.02 258); /* Dark card background */
-  --card-foreground: oklch(0.95 0.01 330); /* Light card text */
+  --foreground: oklch(0.95 0.01 270); /* Light purple-tinted text */
+  --card: oklch(0.2 0.02 270); /* Dark purple card background */
+  --card-foreground: oklch(0.95 0.01 270); /* Light card text */
   --popover: oklch(0.15 0.02 258); /* Dark popover */
-  --popover-foreground: oklch(0.95 0.01 330); /* Light popover text */
-  --primary: oklch(0.65 0.25 330); /* Keep vibrant pink */
+  --popover-foreground: oklch(0.95 0.01 270); /* Light popover text */
+  --primary: oklch(0.65 0.15 270); /* Keep muted purple */
   --primary-foreground: oklch(1 0 0); /* White text on primary */
-  --secondary: oklch(0.55 0.2 270); /* Keep vibrant indigo */
-  --secondary-foreground: oklch(1 0 0); /* White text on secondary */
-  --muted: oklch(0.25 0.02 258); /* Dark muted */
-  --muted-foreground: oklch(0.7 0.01 330); /* Muted pink-tinted text */
-  --accent: oklch(0.55 0.2 270); /* Keep vibrant indigo */
-  --accent-foreground: oklch(1 0 0); /* White text on accent */
+  --secondary: oklch(0.75 0.12 60); /* Keep warm yellow */
+  --secondary-foreground: oklch(0.2 0.02 258); /* Dark text on secondary */
+  --muted: oklch(0.25 0.02 270); /* Dark muted purple */
+  --muted-foreground: oklch(0.7 0.01 270); /* Muted purple-tinted text */
+  --accent: oklch(0.75 0.12 60); /* Keep warm yellow */
+  --accent-foreground: oklch(0.2 0.02 258); /* Dark text on accent */
   --destructive: oklch(0.55 0.25 15); /* Keep rose red */
   --destructive-foreground: oklch(1 0 0); /* White text on destructive */
-  --border: oklch(0.25 0.02 258); /* Dark border */
-  --input: oklch(0.25 0.02 258); /* Dark input */
-  --ring: oklch(0.65 0.25 330); /* Vibrant pink ring */
-  --chart-1: oklch(0.65 0.25 330); /* Chart colors remain vibrant */
-  --chart-2: oklch(0.55 0.2 270);
-  --chart-3: oklch(0.6 0.15 60);
+  --border: oklch(0.25 0.02 270); /* Dark purple border */
+  --input: oklch(0.25 0.02 270); /* Dark purple input */
+  --ring: oklch(0.65 0.15 270); /* Muted purple ring */
+  --chart-1: oklch(0.65 0.15 270); /* Chart colors remain consistent */
+  --chart-2: oklch(0.75 0.12 60);
+  --chart-3: oklch(0.6 0.15 30);
   --chart-4: oklch(0.55 0.12 80);
   --chart-5: oklch(0.8 0.15 90);
-  --sidebar: oklch(0.2 0.02 258); /* Dark sidebar */
-  --sidebar-foreground: oklch(0.95 0.01 330); /* Light sidebar text */
-  --sidebar-primary: oklch(0.65 0.25 330); /* Vibrant pink in sidebar */
+  --sidebar: oklch(0.2 0.02 270); /* Dark purple sidebar */
+  --sidebar-foreground: oklch(0.95 0.01 270); /* Light sidebar text */
+  --sidebar-primary: oklch(0.65 0.15 270); /* Muted purple in sidebar */
   --sidebar-primary-foreground: oklch(1 0 0); /* White text */
-  --sidebar-accent: oklch(0.55 0.2 270); /* Vibrant indigo in sidebar */
-  --sidebar-accent-foreground: oklch(1 0 0); /* White text */
-  --sidebar-border: oklch(0.25 0.02 258); /* Dark sidebar border */
-  --sidebar-ring: oklch(0.65 0.25 330); /* Vibrant pink ring */
+  --sidebar-accent: oklch(0.75 0.12 60); /* Warm yellow in sidebar */
+  --sidebar-accent-foreground: oklch(0.2 0.02 258); /* Dark text */
+  --sidebar-border: oklch(0.25 0.02 270); /* Dark purple sidebar border */
+  --sidebar-ring: oklch(0.65 0.15 270); /* Muted purple ring */
 }
 
 /* Updated font configuration to use Inter instead of Geist */

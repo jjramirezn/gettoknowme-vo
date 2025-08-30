@@ -1,60 +1,58 @@
 import { Button } from "@/components/ui/button"
-import { Globe } from "lucide-react"
 import NextLink from "next/link"
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-secondary/10 flex flex-col items-center justify-center px-4">
-      <div className="text-center max-w-2xl mx-auto">
-        {/* Logo */}
-        <div className="w-20 h-20 bg-gradient-to-br from-primary to-secondary rounded-2xl flex items-center justify-center mx-auto mb-8 shadow-lg">
-          <Globe className="w-10 h-10 text-white" />
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-primary/20 via-primary/10 to-primary/30 flex items-center justify-center px-4 lg:px-8">
+      <div className="max-w-7xl mx-auto w-full">
+        <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+          <div className="flex justify-center lg:justify-end">
+            <div className="w-80 h-80 bg-gradient-to-br from-primary to-primary/80 rounded-3xl flex items-center justify-center shadow-2xl transform hover:scale-105 transition-transform duration-300">
+              <span className="text-8xl font-black text-secondary drop-shadow-lg">ME</span>
+            </div>
+          </div>
 
-        <div className="w-64 h-64 mx-auto mb-8 rounded-3xl overflow-hidden shadow-xl">
-          <img
-            src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/photo_2025-08-30_10-52-24.jpg-2CMnOAqPbMZsMCo8VRr7ZHEpF1XNZ8.jpeg"
-            alt="G2M Logo"
-            className="w-full h-full object-cover"
-          />
-        </div>
+          <div className="text-center lg:text-left space-y-8">
+            <h1 className="text-5xl lg:text-7xl font-bold text-foreground leading-tight">
+              Show the world
+              <br />
+              <span className="text-primary">the real you.</span>
+            </h1>
 
-        {/* Catchy Tagline */}
-        <h1 className="text-5xl md:text-6xl font-bold text-balance mb-4">
-          Your Personal
-          <span className="text-transparent bg-gradient-to-r from-primary to-secondary bg-clip-text"> Homepage</span>
-        </h1>
+            <div className="space-y-4 max-w-md mx-auto lg:mx-0">
+              <NextLink href="/auth/login" className="block">
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="w-full text-lg py-6 rounded-full bg-white/90 hover:bg-white border-0 text-foreground shadow-lg hover:shadow-xl transition-all"
+                >
+                  Sign in
+                </Button>
+              </NextLink>
 
-        <p className="text-xl text-muted-foreground text-balance mb-12 max-w-lg mx-auto">
-          One link. All your socials. Pure vibes. ✨
-        </p>
+              <NextLink href="/auth/signup" className="block">
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="w-full text-lg py-6 rounded-full bg-white/90 hover:bg-white border-0 text-foreground shadow-lg hover:shadow-xl transition-all"
+                >
+                  Create account
+                </Button>
+              </NextLink>
+            </div>
 
-        {/* CTA Buttons */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <NextLink href="/auth/signup">
-            <Button
-              size="lg"
-              className="text-lg px-12 py-6 rounded-full bg-gradient-to-r from-primary to-secondary hover:shadow-lg transition-all"
-            >
-              Get Started
-            </Button>
-          </NextLink>
-          <NextLink href="/auth/login">
-            <Button
-              variant="outline"
-              size="lg"
-              className="text-lg px-12 py-6 rounded-full border-2 hover:bg-primary/5 transition-all bg-transparent"
-            >
-              Sign In
-            </Button>
-          </NextLink>
-        </div>
-
-        {/* Demo Link */}
-        <div className="mt-8">
-          <NextLink href="/alex" className="text-muted-foreground hover:text-primary transition-colors underline">
-            Check out a demo profile
-          </NextLink>
+            <p className="text-sm text-muted-foreground max-w-md mx-auto lg:mx-0">
+              By signing up, you agree to the{" "}
+              <NextLink href="/terms" className="underline hover:text-primary transition-colors">
+                Terms of Service
+              </NextLink>{" "}
+              and{" "}
+              <NextLink href="/privacy" className="underline hover:text-primary transition-colors">
+                Privacy Policy
+              </NextLink>
+              , including Cookie Use.
+            </p>
+          </div>
         </div>
       </div>
     </div>
