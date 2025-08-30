@@ -260,47 +260,130 @@ export function WidgetGrid({
       instagram: {
         platform: "instagram",
         handle: "@yourhandle",
-        followers: "Connect to see stats",
+        followers: "12.5K followers",
         icon: "📷",
         color: "#E4405F",
         url: `https://instagram.com/yourhandle`,
-        recentPosts: [],
+        recentPosts: [
+          {
+            id: 1,
+            image:
+              "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/photo_2025-08-30_19-14-57.jpg-NbJZnf7aB2jncNiLBm2AgNaU9E41bb.jpeg",
+            likes: 234,
+            caption: "Golden hour vibes ⚽✨",
+          },
+          {
+            id: 2,
+            image:
+              "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/photo_2025-08-30_19-14-51.jpg-lC1OeE6lYpEdpWY9Gv9NvWiAYccuqH.jpeg",
+            likes: 189,
+            caption: "Evening in the old town 🌅",
+          },
+          {
+            id: 3,
+            image:
+              "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/photo_2025-08-30_19-14-46.jpg-kLehh4UkdAyQ6ntjrYo68qLj2iWeYV.jpeg",
+            likes: 156,
+            caption: "Mountain adventures 🏔️",
+          },
+        ],
       },
       twitter: {
         platform: "twitter",
         handle: "@yourhandle",
-        followers: "Connect to see stats",
+        followers: "8.2K followers",
         icon: "🐦",
         color: "#1DA1F2",
         url: `https://twitter.com/yourhandle`,
-        recentPosts: [],
+        recentPosts: [
+          {
+            id: 1,
+            text: "Just shipped a new feature! The feeling when everything works perfectly on the first try 🚀",
+            likes: 42,
+            retweets: 12,
+            time: "2h",
+          },
+          {
+            id: 2,
+            text: "Coffee, code, repeat ☕ What's your favorite productivity ritual?",
+            likes: 28,
+            retweets: 5,
+            time: "4h",
+          },
+          {
+            id: 3,
+            text: "Beautiful sunset from today's hike. Sometimes you need to step away from the screen 🌅",
+            likes: 67,
+            retweets: 18,
+            time: "1d",
+          },
+        ],
       },
       youtube: {
         platform: "youtube",
         handle: "Your Channel",
-        followers: "Connect to see stats",
+        followers: "5.8K subscribers",
         icon: "📺",
         color: "#FF0000",
         url: `https://youtube.com/@yourhandle`,
-        recentPosts: [],
+        recentPosts: [
+          {
+            id: 1,
+            title: "Building a Modern Web App",
+            thumbnail:
+              "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/photo_2025-08-30_19-14-40.jpg-Q6gIOOAVH6BKww9ypJ7kzXcTB77eT9.jpeg",
+            views: "2.1K views",
+            duration: "12:34",
+          },
+          {
+            id: 2,
+            title: "My Development Setup 2024",
+            thumbnail:
+              "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/photo_2025-08-30_19-14-57.jpg-NbJZnf7aB2jncNiLBm2AgNaU9E41bb.jpeg",
+            views: "1.8K views",
+            duration: "8:45",
+          },
+        ],
       },
       github: {
         platform: "github",
         handle: "yourhandle",
-        followers: "Connect to see stats",
+        followers: "234 followers",
         icon: "💻",
         color: "#333333",
         url: `https://github.com/yourhandle`,
-        recentPosts: [],
+        recentPosts: [
+          {
+            id: 1,
+            repo: "awesome-project",
+            description: "A modern web application built with Next.js",
+            language: "TypeScript",
+            stars: 42,
+          },
+          {
+            id: 2,
+            repo: "ui-components",
+            description: "Reusable React components library",
+            language: "JavaScript",
+            stars: 28,
+          },
+        ],
       },
       linkedin: {
         platform: "linkedin",
         handle: "Your Name",
-        followers: "Connect to see stats",
+        followers: "1.2K connections",
         icon: "💼",
         color: "#0077B5",
         url: `https://linkedin.com/in/yourhandle`,
-        recentPosts: [],
+        recentPosts: [
+          {
+            id: 1,
+            text: "Excited to share my latest project! Building the future of web development.",
+            likes: 15,
+            time: "1d",
+          },
+        ],
       },
     }
 
