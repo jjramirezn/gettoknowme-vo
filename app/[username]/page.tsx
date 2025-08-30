@@ -24,8 +24,6 @@ export default function PublicProfilePage({ params }: { params: { username: stri
   const editFromParams = useMemo(() => searchParams.get("edit") === "true", [searchParams])
 
   const loadProfileData = useCallback(async () => {
-    if (isLoading) return
-
     setIsLoading(true)
 
     try {
@@ -49,8 +47,29 @@ export default function PublicProfilePage({ params }: { params: { username: stri
         setIsOwnProfile(isOwn)
 
         if (isOwn) {
-          const { data: profile } = await supabase.from("profiles").select("*").eq("user_id", authUser.id).single()
+          let { data: profile } = await supabase.from("profiles").select("*").eq("user_id", authUser.id).single()
           console.log("[v0] Own profile data:", profile)
+
+          if (!profile) {
+            console.log("[v0] Creating new profile for user:", authUser.id)
+            const { data: newProfile, error } = await supabase
+              .from("profiles")
+              .insert({
+                user_id: authUser.id,
+                username: userProfile?.username || `user_${authUser.id.slice(0, 8)}`,
+                display_name: userProfile?.username || `User ${authUser.id.slice(0, 8)}`,
+                bio: "Welcome to my profile!",
+              })
+              .select()
+              .single()
+
+            if (newProfile && !error) {
+              profile = newProfile
+              console.log("[v0] Created new profile:", profile)
+            } else {
+              console.error("[v0] Error creating profile:", error)
+            }
+          }
 
           if (profile) {
             setProfileId(profile.id)
