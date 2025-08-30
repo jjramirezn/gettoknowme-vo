@@ -20,23 +20,19 @@ export default function HomePage() {
       } = await supabase.auth.getUser()
       if (user) {
         console.log("[v0] User found:", user.id)
-        const { data: profile, error } = await supabase
-          .from("profiles")
-          .select("username")
-          .eq("user_id", user.id)
-          .single()
+        const { data: userData, error } = await supabase.from("users").select("username").eq("id", user.id).single()
 
-        console.log("[v0] Profile data:", profile)
-        console.log("[v0] Profile error:", error)
-        console.log("[v0] Username:", profile?.username)
-        console.log("[v0] Starts with anon_:", profile?.username?.startsWith("anon_"))
+        console.log("[v0] User data:", userData)
+        console.log("[v0] User error:", error)
+        console.log("[v0] Username:", userData?.username)
+        console.log("[v0] Starts with anon_:", userData?.username?.startsWith("anon_"))
 
-        if (!profile?.username || profile.username.startsWith("anon_")) {
+        if (!userData?.username || userData.username.startsWith("anon_")) {
           console.log("[v0] Redirecting to username setup")
           router.push("/username-setup")
         } else {
-          console.log("[v0] Redirecting to profile:", profile.username)
-          router.push(`/${profile.username}?edit=true`)
+          console.log("[v0] Redirecting to profile:", userData.username)
+          router.push(`/${userData.username}?edit=true`)
         }
       }
     }
@@ -67,7 +63,24 @@ export default function HomePage() {
       if (error) throw error
 
       if (data.user) {
-        router.push("/username-setup")
+        console.log("[v0] Anonymous user logged in:", data.user.id)
+        const { data: userData, error: userError } = await supabase
+          .from("users")
+          .select("username")
+          .eq("id", data.user.id)
+          .single()
+
+        console.log("[v0] Anonymous user data:", userData)
+        console.log("[v0] Anonymous user error:", userError)
+        console.log("[v0] Anonymous username:", userData?.username)
+
+        if (!userData?.username || userData.username.startsWith("anon_")) {
+          console.log("[v0] Anonymous user needs username setup")
+          router.push("/username-setup")
+        } else {
+          console.log("[v0] Anonymous user has username, redirecting to profile:", userData.username)
+          router.push(`/${userData.username}?edit=true`)
+        }
       }
     } catch (error) {
       console.error("Error:", error)

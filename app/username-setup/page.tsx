@@ -29,10 +29,10 @@ export default function UsernameSetup() {
         return
       }
 
-      const { data: profile } = await supabase.from("profiles").select("username").eq("user_id", user.id).single()
+      const { data: userData } = await supabase.from("users").select("username").eq("id", user.id).single()
 
-      if (profile?.username) {
-        router.push(`/${profile.username}`)
+      if (userData?.username && !userData.username.startsWith("anon_")) {
+        router.push(`/${userData.username}`)
       }
     }
 
@@ -73,20 +73,30 @@ export default function UsernameSetup() {
       } = await supabase.auth.getUser()
       if (!user) throw new Error("No user found")
 
-      // Update user table
-      await supabase.from("users").update({ username }).eq("id", user.id)
+      console.log("[v0] Updating username to:", username)
 
-      // Create or update profile
-      await supabase.from("profiles").upsert({
+      const { error: userError } = await supabase.from("users").update({ username }).eq("id", user.id)
+
+      if (userError) {
+        console.error("[v0] Error updating users table:", userError)
+        throw userError
+      }
+
+      const { error: profileError } = await supabase.from("profiles").upsert({
         user_id: user.id,
-        username,
         name: user.user_metadata?.full_name || username,
         bio: "Hey, this is my profile!",
       })
 
+      if (profileError) {
+        console.error("[v0] Error updating profiles table:", profileError)
+        throw profileError
+      }
+
+      console.log("[v0] Username updated successfully, redirecting to:", `/${username}?edit=true`)
       router.push(`/${username}?edit=true`)
     } catch (error) {
-      console.error("Error setting username:", error)
+      console.error("[v0] Error setting username:", error)
     } finally {
       setIsSubmitting(false)
     }
