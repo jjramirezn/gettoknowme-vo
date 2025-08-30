@@ -19,7 +19,7 @@ export const metadata: Metadata = {
     "Centralize your online presence with GetToKnowMe - the modern platform for showcasing your digital identity",
   generator: "v0.app",
   other: {
-    "tiktok-developers-site-verification": "RuL9QzWGhWGxbFLQ0kG8HMahoXFyDD3A",
+    "tiktok-developers-site-verification": "guMkUVloN63rDFwIpGC0fqIkMDQptm6V",
   },
 }
 
@@ -31,7 +31,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        <meta name="tiktok-developers-site-verification" content="RuL9QzWGhWGxbFLQ0kG8HMahoXFyDD3A" />
+        <meta name="tiktok-developers-site-verification" content="guMkUVloN63rDFwIpGC0fqIkMDQptm6V" />
       </head>
       <body className={`font-sans ${inter.variable} ${GeistMono.variable}`}>
         <Navigation />
