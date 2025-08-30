@@ -240,15 +240,44 @@ export default function PublicProfilePage({ params }: { params: { username: stri
 
   const handleShare = async () => {
     const profileUrl = `${window.location.origin}/${params.username}`
-    if (navigator.share) {
-      await navigator.share({
-        title: `${userData?.displayName} - GetToKnowMe`,
-        text: userData?.bio,
-        url: profileUrl,
-      })
-    } else {
-      await navigator.clipboard.writeText(profileUrl)
-      // Could add a toast notification here
+    const shareData = {
+      title: `${userData?.displayName || userData?.username} - Get2KnowMe`,
+      text: userData?.bio || `Check out ${userData?.displayName || userData?.username}'s profile on Get2KnowMe!`,
+      url: profileUrl,
+    }
+
+    try {
+      if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
+        await navigator.share(shareData)
+        toast({
+          title: "Profile shared",
+          description: "Profile shared successfully!",
+        })
+      } else {
+        // Fallback to clipboard
+        await navigator.clipboard.writeText(profileUrl)
+        toast({
+          title: "Link copied",
+          description: "Profile link copied to clipboard!",
+        })
+      }
+    } catch (error) {
+      // If sharing was cancelled or failed, try clipboard as fallback
+      if (error.name !== "AbortError") {
+        try {
+          await navigator.clipboard.writeText(profileUrl)
+          toast({
+            title: "Link copied",
+            description: "Profile link copied to clipboard!",
+          })
+        } catch (clipboardError) {
+          toast({
+            title: "Share failed",
+            description: "Unable to share or copy link. Please try again.",
+            variant: "destructive",
+          })
+        }
+      }
     }
   }
 
