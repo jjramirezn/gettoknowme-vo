@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Share2, LogOut, Edit3, Eye } from "lucide-react"
 import { WidgetGrid } from "@/components/widget-system"
@@ -16,124 +16,127 @@ export default function PublicProfilePage({ params }: { params: { username: stri
   const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
   const searchParams = useSearchParams()
-  const supabase = createClient()
+
+  const supabase = useMemo(() => createClient(), [])
 
   const [isEditMode, setIsEditMode] = useState(searchParams.get("edit") === "true")
 
-  useEffect(() => {
-    const loadProfileData = async () => {
-      try {
-        console.log("[v0] Loading profile for:", params.username)
+  const editFromParams = useMemo(() => searchParams.get("edit") === "true", [searchParams])
 
-        const {
-          data: { user: authUser },
-        } = await supabase.auth.getUser()
-        setCurrentUser(authUser)
+  const loadProfileData = useCallback(async () => {
+    if (isLoading) return
 
-        let profileData = null
-        const socialLinksData = []
+    setIsLoading(true)
 
-        const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(params.username)
+    try {
+      console.log("[v0] Loading profile for:", params.username)
 
-        if (authUser) {
-          const { data: userProfile } = await supabase.from("users").select("username").eq("id", authUser.id).single()
-          console.log("[v0] Current user profile:", userProfile)
+      const {
+        data: { user: authUser },
+      } = await supabase.auth.getUser()
+      setCurrentUser(authUser)
 
-          const isOwn = isUUID ? authUser.id === params.username : userProfile?.username === params.username
-          setIsOwnProfile(isOwn)
+      let profileData = null
+      const socialLinksData = []
 
-          if (isOwn) {
-            const { data: profile } = await supabase.from("profiles").select("*").eq("user_id", authUser.id).single()
-            console.log("[v0] Own profile data:", profile)
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(params.username)
 
-            if (profile) {
-              setProfileId(profile.id)
-              profileData = profile
-            }
+      if (authUser) {
+        const { data: userProfile } = await supabase.from("users").select("username").eq("id", authUser.id).single()
+        console.log("[v0] Current user profile:", userProfile)
+
+        const isOwn = isUUID ? authUser.id === params.username : userProfile?.username === params.username
+        setIsOwnProfile(isOwn)
+
+        if (isOwn) {
+          const { data: profile } = await supabase.from("profiles").select("*").eq("user_id", authUser.id).single()
+          console.log("[v0] Own profile data:", profile)
+
+          if (profile) {
+            setProfileId(profile.id)
+            profileData = profile
           }
         }
-
-        if (!profileData) {
-          console.log("[v0] Looking for public profile, isUUID:", isUUID)
-
-          let publicUser = null
-
-          if (isUUID) {
-            const { data } = await supabase.from("users").select("id, username").eq("id", params.username).single()
-            publicUser = data
-          } else {
-            const { data } = await supabase
-              .from("users")
-              .select("id, username")
-              .eq("username", params.username)
-              .single()
-            publicUser = data
-          }
-
-          console.log("[v0] Public user found:", publicUser)
-
-          if (publicUser) {
-            const { data: profile } = await supabase.from("profiles").select("*").eq("user_id", publicUser.id).single()
-            console.log("[v0] Public profile data:", profile)
-
-            if (profile) {
-              setProfileId(profile.id)
-              profileData = profile
-            }
-          }
-        }
-
-        if (profileData) {
-          const { data: socialLinks } = await supabase
-            .from("social_links")
-            .select("*")
-            .eq("profile_id", profileData.id)
-            .eq("is_visible", true)
-
-          if (socialLinks) {
-            const formattedAccounts = socialLinks.map((link) => ({
-              platform: link.platform,
-              handle: link.username || `@${link.username}`,
-              followers: "0",
-              icon: getPlatformIcon(link.platform),
-              color: getPlatformColor(link.platform),
-              url: link.url,
-              recentPosts: [],
-            }))
-            setSocialAccounts(formattedAccounts)
-          }
-
-          setUserData({
-            username: profileData.username || params.username,
-            displayName: profileData.display_name || profileData.username || params.username,
-            bio: profileData.bio || "No bio available",
-            profileImage: profileData.profile_picture_url || "/abstract-profile.png",
-            location: profileData.location || "",
-            joinDate: new Date(profileData.created_at).toLocaleDateString("en-US", {
-              month: "long",
-              year: "numeric",
-            }),
-            followers: "0",
-            following: "0",
-          })
-        } else {
-          console.log("[v0] No profile found for:", params.username)
-          setUserData(null)
-        }
-
-        if (isOwnProfile && searchParams.get("edit") === "true") {
-          setIsEditMode(true)
-        }
-      } catch (error) {
-        console.error("[v0] Error loading profile:", error)
-        setUserData(null)
-      } finally {
-        setIsLoading(false)
       }
-    }
 
+      if (!profileData) {
+        console.log("[v0] Looking for public profile, isUUID:", isUUID)
+
+        let publicUser = null
+
+        if (isUUID) {
+          const { data } = await supabase.from("users").select("id, username").eq("id", params.username).single()
+          publicUser = data
+        } else {
+          const { data } = await supabase.from("users").select("id, username").eq("username", params.username).single()
+          publicUser = data
+        }
+
+        console.log("[v0] Public user found:", publicUser)
+
+        if (publicUser) {
+          const { data: profile } = await supabase.from("profiles").select("*").eq("user_id", publicUser.id).single()
+          console.log("[v0] Public profile data:", profile)
+
+          if (profile) {
+            setProfileId(profile.id)
+            profileData = profile
+          }
+        }
+      }
+
+      if (profileData) {
+        const { data: socialLinks } = await supabase
+          .from("social_links")
+          .select("*")
+          .eq("profile_id", profileData.id)
+          .eq("is_visible", true)
+
+        if (socialLinks) {
+          const formattedAccounts = socialLinks.map((link) => ({
+            platform: link.platform,
+            handle: link.username || `@${link.username}`,
+            followers: "0",
+            icon: getPlatformIcon(link.platform),
+            color: getPlatformColor(link.platform),
+            url: link.url,
+            recentPosts: [],
+          }))
+          setSocialAccounts(formattedAccounts)
+        }
+
+        setUserData({
+          username: profileData.username || params.username,
+          displayName: profileData.display_name || profileData.username || params.username,
+          bio: profileData.bio || "No bio available",
+          profileImage: profileData.profile_picture_url || "/abstract-profile.png",
+          location: profileData.location || "",
+          joinDate: new Date(profileData.created_at).toLocaleDateString("en-US", {
+            month: "long",
+            year: "numeric",
+          }),
+          followers: "0",
+          following: "0",
+        })
+      } else {
+        console.log("[v0] No profile found for:", params.username)
+        setUserData(null)
+      }
+
+      if (isOwnProfile && editFromParams) {
+        setIsEditMode(true)
+      }
+    } catch (error) {
+      console.error("[v0] Error loading profile:", error)
+      setUserData(null)
+    } finally {
+      setIsLoading(false)
+    }
+  }, [params.username, supabase, editFromParams, isOwnProfile])
+
+  useEffect(() => {
     loadProfileData()
-  }, [params.username, searchParams, supabase.auth])
+  }, [loadProfileData])
 
   const getPlatformIcon = (platform: string) => {
     const icons = {
@@ -191,6 +194,20 @@ export default function PublicProfilePage({ params }: { params: { username: stri
     }
   }
 
+  const profileData = useMemo(
+    () => ({
+      name: userData?.displayName,
+      username: userData?.username,
+      bio: userData?.bio,
+      avatar: userData?.profileImage,
+      location: userData?.location,
+      joinDate: userData?.joinDate,
+      followers: userData?.followers,
+      following: userData?.following,
+    }),
+    [userData],
+  )
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/5 flex items-center justify-center">
@@ -213,17 +230,6 @@ export default function PublicProfilePage({ params }: { params: { username: stri
         </div>
       </div>
     )
-  }
-
-  const profileData = {
-    name: userData.displayName,
-    username: userData.username,
-    bio: userData.bio,
-    avatar: userData.profileImage,
-    location: userData.location,
-    joinDate: userData.joinDate,
-    followers: userData.followers,
-    following: userData.following,
   }
 
   return (
