@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Eye, EyeOff, Plus, Calendar } from "lucide-react"
+import { useToast } from "@/hooks/use-toast"
 
 import { WidgetBase, type WidgetConfig } from "@/components/widget-base"
 import { SocialWidget } from "@/components/widgets/social-widget"
@@ -142,6 +143,7 @@ export function WidgetGrid({
 }: WidgetGridProps) {
   const [widgetConfigs, setWidgetConfigs] = useState<WidgetConfig[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const { toast } = useToast()
 
   useEffect(() => {
     async function loadWidgetConfigs() {
@@ -190,6 +192,8 @@ export function WidgetGrid({
   }
 
   const handleConfigChange = async (id: string, newConfig: Partial<WidgetConfig>) => {
+    const oldConfig = widgetConfigs.find((w) => w.id === id)
+
     setWidgetConfigs((prev) => {
       const updatedConfigs = prev.map((config) => (config.id === id ? { ...config, ...newConfig } : config))
 
@@ -209,6 +213,20 @@ export function WidgetGrid({
     if (updatedWidget) {
       const configToSave = { ...updatedWidget, ...newConfig }
       await saveWidgetLayout(configToSave, profileId)
+
+      if (newConfig.gridPosition && oldConfig) {
+        toast({
+          description: `${WIDGET_TYPES[oldConfig.platform as keyof typeof WIDGET_TYPES]?.name || "Widget"} moved`,
+        })
+      } else if (newConfig.gridSize && oldConfig) {
+        toast({
+          description: `${WIDGET_TYPES[oldConfig.platform as keyof typeof WIDGET_TYPES]?.name || "Widget"} resized`,
+        })
+      } else if (newConfig.customColor) {
+        toast({
+          description: `${WIDGET_TYPES[oldConfig?.platform as keyof typeof WIDGET_TYPES]?.name || "Widget"} color updated`,
+        })
+      }
     }
   }
 
@@ -231,6 +249,10 @@ export function WidgetGrid({
 
     setWidgetConfigs((prev) => [...prev, newWidget])
     await saveWidgetLayout(newWidget, profileId)
+
+    toast({
+      description: `${WIDGET_TYPES[type as keyof typeof WIDGET_TYPES]?.name || "Widget"} added`,
+    })
   }
 
   const createMockAccount = (platform: string): SocialAccount => {
@@ -386,9 +408,12 @@ export function WidgetGrid({
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() =>
-                                handleConfigChange(existingWidget.id, { visible: !existingWidget.visible })
-                              }
+                              onClick={async () => {
+                                await handleConfigChange(existingWidget.id, { visible: !existingWidget.visible })
+                                toast({
+                                  description: `${info.name} ${existingWidget.visible ? "hidden" : "shown"}`,
+                                })
+                              }}
                               className="h-6 w-6 p-0"
                             >
                               {existingWidget.visible ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
