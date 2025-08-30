@@ -7,66 +7,13 @@ import { WidgetGrid } from "@/components/widget-system"
 import { createClient } from "@/lib/supabase/client"
 import { useRouter, useSearchParams } from "next/navigation"
 
-// Mock user data - in real app this would come from database
-const mockUserData = {
-  username: "alexcreator",
-  displayName: "Alex Johnson",
-  bio: "Digital creator, photographer, and storyteller. Sharing my journey through life, travel, and creativity. Always looking for the next adventure!",
-  profileImage: "/abstract-profile.png",
-  location: "San Francisco, CA",
-  joinDate: "March 2024",
-  followers: "12.5K",
-  following: "892",
-  connectedAccounts: [
-    {
-      platform: "Instagram",
-      handle: "@alexcreator",
-      followers: "8.2K",
-      icon: "📷",
-      color: "bg-gradient-to-r from-purple-500 to-pink-500",
-      url: "https://instagram.com/alexcreator",
-      recentPosts: [
-        { image: "/vibrant-coastal-sunset.png", likes: 234, comments: 12 },
-        { image: "/steaming-coffee-cup.png", likes: 156, comments: 8 },
-        { image: "/vibrant-cityscape.png", likes: 189, comments: 15 },
-      ],
-    },
-    {
-      platform: "Twitter",
-      handle: "@alexcreator",
-      followers: "3.1K",
-      icon: "🐦",
-      color: "bg-blue-500",
-      url: "https://twitter.com/alexcreator",
-      recentPosts: [
-        { text: "Just finished an amazing photoshoot in Golden Gate Park! 📸", likes: 45, comments: 6 },
-        { text: "Coffee and creativity go hand in hand ☕️✨", likes: 32, comments: 4 },
-      ],
-    },
-    {
-      platform: "YouTube",
-      handle: "Alex Creator",
-      followers: "1.2K",
-      icon: "📺",
-      color: "bg-red-500",
-      url: "https://youtube.com/@alexcreator",
-      recentPosts: [
-        { title: "My Photography Workflow 2024", views: "2.1K", duration: "12:34" },
-        { title: "Best Coffee Shops in SF", views: "1.8K", duration: "8:45" },
-      ],
-    },
-  ],
-  paymentLinks: [
-    { platform: "Ko-fi", url: "https://ko-fi.com/alexcreator", icon: "☕" },
-    { platform: "PayPal", url: "https://paypal.me/alexcreator", icon: "💳" },
-  ],
-}
-
 export default function PublicProfilePage({ params }: { params: { username: string } }) {
-  const user = mockUserData // In real app, fetch based on params.username
+  const [userData, setUserData] = useState(null)
+  const [socialAccounts, setSocialAccounts] = useState([])
   const [currentUser, setCurrentUser] = useState(null)
   const [isOwnProfile, setIsOwnProfile] = useState(false)
   const [profileId, setProfileId] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
   const searchParams = useSearchParams()
   const supabase = createClient()
@@ -74,44 +21,120 @@ export default function PublicProfilePage({ params }: { params: { username: stri
   const [isEditMode, setIsEditMode] = useState(searchParams.get("edit") === "true")
 
   useEffect(() => {
-    const checkAuth = async () => {
-      const {
-        data: { user: authUser },
-      } = await supabase.auth.getUser()
-      setCurrentUser(authUser)
+    const loadProfileData = async () => {
+      try {
+        const {
+          data: { user: authUser },
+        } = await supabase.auth.getUser()
+        setCurrentUser(authUser)
 
-      if (authUser) {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("id, user_id")
-          .eq("user_id", authUser.id)
-          .single()
+        let profileData = null
+        const socialLinksData = []
 
-        if (profile) {
-          setProfileId(profile.id)
+        if (authUser) {
+          const { data: userProfile } = await supabase.from("users").select("username").eq("id", authUser.id).single()
 
-          const profileUsername = authUser?.user_metadata?.username || authUser?.id
-          setIsOwnProfile(profileUsername === params.username)
+          const isOwn = userProfile?.username === params.username
+          setIsOwnProfile(isOwn)
+
+          if (isOwn) {
+            const { data: profile } = await supabase.from("profiles").select("*").eq("user_id", authUser.id).single()
+
+            if (profile) {
+              setProfileId(profile.id)
+              profileData = profile
+            }
+          }
         }
-      } else {
-        const { data: publicProfile } = await supabase
-          .from("profiles")
-          .select("id, user_id, users!inner(username)")
-          .eq("users.username", params.username)
-          .single()
 
-        if (publicProfile) {
-          setProfileId(publicProfile.id)
+        if (!profileData) {
+          const { data: publicUser } = await supabase
+            .from("users")
+            .select("id, username")
+            .eq("username", params.username)
+            .single()
+
+          if (publicUser) {
+            const { data: profile } = await supabase.from("profiles").select("*").eq("user_id", publicUser.id).single()
+
+            if (profile) {
+              setProfileId(profile.id)
+              profileData = profile
+            }
+          }
         }
-      }
 
-      if (isOwnProfile && searchParams.get("edit") === "true") {
-        setIsEditMode(true)
+        if (profileData) {
+          const { data: socialLinks } = await supabase
+            .from("social_links")
+            .select("*")
+            .eq("profile_id", profileData.id)
+            .eq("is_visible", true)
+
+          if (socialLinks) {
+            const formattedAccounts = socialLinks.map((link) => ({
+              platform: link.platform,
+              handle: link.username || `@${link.username}`,
+              followers: "0",
+              icon: getPlatformIcon(link.platform),
+              color: getPlatformColor(link.platform),
+              url: link.url,
+              recentPosts: [],
+            }))
+            setSocialAccounts(formattedAccounts)
+          }
+
+          setUserData({
+            username: params.username,
+            displayName: params.username,
+            bio: profileData.bio || "No bio available",
+            profileImage: profileData.profile_picture_url || "/abstract-profile.png",
+            location: profileData.location || "",
+            joinDate: new Date(profileData.created_at).toLocaleDateString("en-US", {
+              month: "long",
+              year: "numeric",
+            }),
+            followers: "0",
+            following: "0",
+          })
+        }
+
+        if (isOwnProfile && searchParams.get("edit") === "true") {
+          setIsEditMode(true)
+        }
+      } catch (error) {
+        console.error("Error loading profile:", error)
+      } finally {
+        setIsLoading(false)
       }
     }
 
-    checkAuth()
+    loadProfileData()
   }, [params.username, searchParams, supabase.auth])
+
+  const getPlatformIcon = (platform: string) => {
+    const icons = {
+      instagram: "📷",
+      twitter: "🐦",
+      youtube: "📺",
+      github: "💻",
+      linkedin: "💼",
+      tiktok: "🎵",
+    }
+    return icons[platform] || "🔗"
+  }
+
+  const getPlatformColor = (platform: string) => {
+    const colors = {
+      instagram: "bg-gradient-to-r from-purple-500 to-pink-500",
+      twitter: "bg-blue-500",
+      youtube: "bg-red-500",
+      github: "bg-gray-800",
+      linkedin: "bg-blue-600",
+      tiktok: "bg-black",
+    }
+    return colors[platform] || "bg-gray-500"
+  }
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
@@ -135,8 +158,8 @@ export default function PublicProfilePage({ params }: { params: { username: stri
     const profileUrl = `${window.location.origin}/${params.username}`
     if (navigator.share) {
       await navigator.share({
-        title: `${user.displayName} - GetToKnowMe`,
-        text: user.bio,
+        title: `${userData?.displayName} - GetToKnowMe`,
+        text: userData?.bio,
         url: profileUrl,
       })
     } else {
@@ -145,18 +168,7 @@ export default function PublicProfilePage({ params }: { params: { username: stri
     }
   }
 
-  const profileData = {
-    name: user.displayName,
-    username: user.username,
-    bio: user.bio,
-    avatar: user.profileImage,
-    location: user.location,
-    joinDate: user.joinDate,
-    followers: user.followers,
-    following: user.following,
-  }
-
-  if (!profileId) {
+  if (isLoading || !userData || !profileId) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/5 flex items-center justify-center">
         <div className="text-center text-muted-foreground">
@@ -164,6 +176,17 @@ export default function PublicProfilePage({ params }: { params: { username: stri
         </div>
       </div>
     )
+  }
+
+  const profileData = {
+    name: userData.displayName,
+    username: userData.username,
+    bio: userData.bio,
+    avatar: userData.profileImage,
+    location: userData.location,
+    joinDate: userData.joinDate,
+    followers: userData.followers,
+    following: userData.following,
   }
 
   return (
@@ -202,7 +225,7 @@ export default function PublicProfilePage({ params }: { params: { username: stri
 
       <div className="container mx-auto px-4 py-8 max-w-6xl">
         <WidgetGrid
-          accounts={user.connectedAccounts}
+          accounts={socialAccounts}
           profileData={profileData}
           profileId={profileId}
           isEditMode={isEditMode && isOwnProfile}
