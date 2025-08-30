@@ -6,18 +6,7 @@ import { useState, useRef, useEffect, useCallback } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import {
-  Settings,
-  GripVertical,
-  ExternalLink,
-  Heart,
-  MessageCircle,
-  Eye,
-  Maximize2,
-  MapPin,
-  Calendar,
-  Users,
-} from "lucide-react"
+import { Settings, GripVertical, ExternalLink, Heart, MessageCircle, Eye, MapPin, Calendar, Users } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 
 // Widget size configurations
@@ -68,6 +57,7 @@ interface WidgetProps {
 
 function ProfileWidget({ config, onConfigChange, isEditMode, profileData }: WidgetProps) {
   const [isDragging, setIsDragging] = useState(false)
+  const [isResizing, setIsResizing] = useState(false)
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
   const [position, setPosition] = useState(config.position)
   const widgetRef = useRef<HTMLDivElement>(null)
@@ -77,7 +67,7 @@ function ProfileWidget({ config, onConfigChange, isEditMode, profileData }: Widg
 
   const handleMouseDown = useCallback(
     (e: React.MouseEvent) => {
-      if (!isEditMode) return
+      if (!isEditMode || isResizing) return
       e.preventDefault()
       setIsDragging(true)
       setDragStart({
@@ -85,36 +75,58 @@ function ProfileWidget({ config, onConfigChange, isEditMode, profileData }: Widg
         y: e.clientY - position.y,
       })
     },
-    [isEditMode, position],
+    [isEditMode, position, isResizing],
+  )
+
+  const handleResizeMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      if (!isEditMode) return
+      e.preventDefault()
+      e.stopPropagation()
+      setIsResizing(true)
+    },
+    [isEditMode],
   )
 
   const handleMouseMove = useCallback(
     (e: MouseEvent) => {
-      if (!isDragging || !isEditMode) return
+      if ((!isDragging && !isResizing) || !isEditMode) return
 
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current)
       }
 
       animationFrameRef.current = requestAnimationFrame(() => {
-        const newPosition = {
-          x: Math.max(0, e.clientX - dragStart.x),
-          y: Math.max(0, e.clientY - dragStart.y),
+        if (isDragging) {
+          const newPosition = {
+            x: Math.max(0, e.clientX - dragStart.x),
+            y: Math.max(0, e.clientY - dragStart.y),
+          }
+          setPosition(newPosition)
         }
-        setPosition(newPosition)
+        if (isResizing) {
+          const sizes = Object.keys(WIDGET_SIZES) as (keyof typeof WIDGET_SIZES)[]
+          const currentIndex = sizes.indexOf(config.size)
+          const nextSize = sizes[(currentIndex + 1) % sizes.length]
+          onConfigChange(config.id, { size: nextSize })
+          setIsResizing(false)
+        }
       })
     },
-    [isDragging, isEditMode, dragStart],
+    [isDragging, isResizing, isEditMode, dragStart, config.size, config.id, onConfigChange],
   )
 
   const handleMouseUp = useCallback(() => {
-    if (!isDragging) return
+    if (!isDragging && !isResizing) return
     setIsDragging(false)
-    onConfigChange(config.id, { position })
+    setIsResizing(false)
+    if (isDragging) {
+      onConfigChange(config.id, { position })
+    }
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current)
     }
-  }, [isDragging, position, config.id, onConfigChange])
+  }, [isDragging, isResizing, position, config.id, onConfigChange])
 
   useEffect(() => {
     if (isDragging) {
@@ -129,13 +141,6 @@ function ProfileWidget({ config, onConfigChange, isEditMode, profileData }: Widg
       }
     }
   }, [isDragging, handleMouseMove, handleMouseUp])
-
-  const toggleSize = () => {
-    const sizes = Object.keys(WIDGET_SIZES) as (keyof typeof WIDGET_SIZES)[]
-    const currentIndex = sizes.indexOf(config.size)
-    const nextSize = sizes[(currentIndex + 1) % sizes.length]
-    onConfigChange(config.id, { size: nextSize })
-  }
 
   const toggleVisibility = () => {
     onConfigChange(config.id, { visible: !config.visible })
@@ -178,10 +183,6 @@ function ProfileWidget({ config, onConfigChange, isEditMode, profileData }: Widg
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
-                  <DropdownMenuItem onClick={toggleSize}>
-                    <Maximize2 className="w-4 h-4 mr-2" />
-                    Resize ({config.size})
-                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={toggleVisibility}>
                     <Eye className="w-4 h-4 mr-2" />
                     Hide Widget
@@ -263,6 +264,18 @@ function ProfileWidget({ config, onConfigChange, isEditMode, profileData }: Widg
             </div>
           )}
         </div>
+
+        {isEditMode && (
+          <div
+            className="absolute bottom-0 right-0 w-4 h-4 cursor-nw-resize bg-primary/20 hover:bg-primary/40 transition-colors"
+            style={{
+              clipPath: "polygon(100% 0, 0 100%, 100% 100%)",
+            }}
+            onMouseDown={handleResizeMouseDown}
+          >
+            <div className="absolute bottom-1 right-1 w-1 h-1 bg-primary rounded-full" />
+          </div>
+        )}
       </CardContent>
     </Card>
   )
@@ -344,6 +357,7 @@ const ENHANCED_MOCK_DATA = {
 
 function SocialWidget({ account, config, onConfigChange, isEditMode }: WidgetProps) {
   const [isDragging, setIsDragging] = useState(false)
+  const [isResizing, setIsResizing] = useState(false)
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
   const [position, setPosition] = useState(config.position)
   const widgetRef = useRef<HTMLDivElement>(null)
@@ -353,7 +367,7 @@ function SocialWidget({ account, config, onConfigChange, isEditMode }: WidgetPro
 
   const handleMouseDown = useCallback(
     (e: React.MouseEvent) => {
-      if (!isEditMode) return
+      if (!isEditMode || isResizing) return
       e.preventDefault()
       setIsDragging(true)
       setDragStart({
@@ -361,36 +375,58 @@ function SocialWidget({ account, config, onConfigChange, isEditMode }: WidgetPro
         y: e.clientY - position.y,
       })
     },
-    [isEditMode, position],
+    [isEditMode, position, isResizing],
+  )
+
+  const handleResizeMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      if (!isEditMode) return
+      e.preventDefault()
+      e.stopPropagation()
+      setIsResizing(true)
+    },
+    [isEditMode],
   )
 
   const handleMouseMove = useCallback(
     (e: MouseEvent) => {
-      if (!isDragging || !isEditMode) return
+      if ((!isDragging && !isResizing) || !isEditMode) return
 
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current)
       }
 
       animationFrameRef.current = requestAnimationFrame(() => {
-        const newPosition = {
-          x: Math.max(0, e.clientX - dragStart.x),
-          y: Math.max(0, e.clientY - dragStart.y),
+        if (isDragging) {
+          const newPosition = {
+            x: Math.max(0, e.clientX - dragStart.x),
+            y: Math.max(0, e.clientY - dragStart.y),
+          }
+          setPosition(newPosition)
         }
-        setPosition(newPosition)
+        if (isResizing) {
+          const sizes = Object.keys(WIDGET_SIZES) as (keyof typeof WIDGET_SIZES)[]
+          const currentIndex = sizes.indexOf(config.size)
+          const nextSize = sizes[(currentIndex + 1) % sizes.length]
+          onConfigChange(config.id, { size: nextSize })
+          setIsResizing(false)
+        }
       })
     },
-    [isDragging, isEditMode, dragStart],
+    [isDragging, isResizing, isEditMode, dragStart, config.size, config.id, onConfigChange],
   )
 
   const handleMouseUp = useCallback(() => {
-    if (!isDragging) return
+    if (!isDragging && !isResizing) return
     setIsDragging(false)
-    onConfigChange(config.id, { position })
+    setIsResizing(false)
+    if (isDragging) {
+      onConfigChange(config.id, { position })
+    }
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current)
     }
-  }, [isDragging, position, config.id, onConfigChange])
+  }, [isDragging, isResizing, position, config.id, onConfigChange])
 
   useEffect(() => {
     if (isDragging) {
@@ -405,13 +441,6 @@ function SocialWidget({ account, config, onConfigChange, isEditMode }: WidgetPro
       }
     }
   }, [isDragging, handleMouseMove, handleMouseUp])
-
-  const toggleSize = () => {
-    const sizes = Object.keys(WIDGET_SIZES) as (keyof typeof WIDGET_SIZES)[]
-    const currentIndex = sizes.indexOf(config.size)
-    const nextSize = sizes[(currentIndex + 1) % sizes.length]
-    onConfigChange(config.id, { size: nextSize })
-  }
 
   const toggleVisibility = () => {
     onConfigChange(config.id, { visible: !config.visible })
@@ -465,10 +494,6 @@ function SocialWidget({ account, config, onConfigChange, isEditMode }: WidgetPro
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
-                  <DropdownMenuItem onClick={toggleSize}>
-                    <Maximize2 className="w-4 h-4 mr-2" />
-                    Resize ({config.size})
-                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={toggleVisibility}>
                     <Eye className="w-4 h-4 mr-2" />
                     Hide Widget
@@ -715,6 +740,18 @@ function SocialWidget({ account, config, onConfigChange, isEditMode }: WidgetPro
             </div>
           )}
         </div>
+
+        {isEditMode && (
+          <div
+            className="absolute bottom-0 right-0 w-4 h-4 cursor-nw-resize bg-primary/20 hover:bg-primary/40 transition-colors"
+            style={{
+              clipPath: "polygon(100% 0, 0 100%, 100% 100%)",
+            }}
+            onMouseDown={handleResizeMouseDown}
+          >
+            <div className="absolute bottom-1 right-1 w-1 h-1 bg-primary rounded-full" />
+          </div>
+        )}
       </CardContent>
     </Card>
   )
