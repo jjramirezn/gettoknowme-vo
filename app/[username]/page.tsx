@@ -33,11 +33,13 @@ export default function PublicProfilePage({ params }: { params: { username: stri
         data: { user: authUser },
       } = await supabase.auth.getUser()
       setCurrentUser(authUser)
+      console.log("[v0] Auth user:", authUser ? "authenticated" : "guest")
 
       let profileData = null
       const socialLinksData = []
 
       const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(params.username)
+      console.log("[v0] Is UUID:", isUUID, "Parameter:", params.username)
 
       if (authUser) {
         const { data: userProfile } = await supabase.from("users").select("username").eq("id", authUser.id).single()
@@ -45,6 +47,7 @@ export default function PublicProfilePage({ params }: { params: { username: stri
 
         const isOwn = isUUID ? authUser.id === params.username : userProfile?.username === params.username
         setIsOwnProfile(isOwn)
+        console.log("[v0] Is own profile:", isOwn)
 
         if (isOwn) {
           let { data: profile } = await supabase.from("profiles").select("*").eq("user_id", authUser.id).single()
@@ -76,31 +79,52 @@ export default function PublicProfilePage({ params }: { params: { username: stri
             profileData = profile
           }
         }
+      } else {
+        setIsOwnProfile(false)
       }
 
       if (!profileData) {
         console.log("[v0] Looking for public profile, isUUID:", isUUID)
 
         let publicUser = null
+        let userQuery = null
 
         if (isUUID) {
-          const { data } = await supabase.from("users").select("id, username").eq("id", params.username).single()
-          publicUser = data
+          console.log("[v0] Querying users by ID:", params.username)
+          userQuery = await supabase.from("users").select("id, username").eq("id", params.username).single()
         } else {
-          const { data } = await supabase.from("users").select("id, username").eq("username", params.username).single()
-          publicUser = data
+          console.log("[v0] Querying users by username:", params.username)
+          userQuery = await supabase.from("users").select("id, username").eq("username", params.username).single()
         }
 
-        console.log("[v0] Public user found:", publicUser)
+        console.log("[v0] User query result:", userQuery)
+        publicUser = userQuery.data
+
+        if (userQuery.error) {
+          console.error("[v0] Error finding user:", userQuery.error)
+        }
 
         if (publicUser) {
-          const { data: profile } = await supabase.from("profiles").select("*").eq("user_id", publicUser.id).single()
+          console.log("[v0] Found public user:", publicUser)
+          const profileQuery = await supabase.from("profiles").select("*").eq("user_id", publicUser.id).single()
+          console.log("[v0] Profile query result:", profileQuery)
+
+          if (profileQuery.error) {
+            console.error("[v0] Error finding profile:", profileQuery.error)
+          }
+
+          const profile = profileQuery.data
           console.log("[v0] Public profile data:", profile)
 
-          if (profile) {
+          if (profile && profile.privacy_level === "public") {
             setProfileId(profile.id)
             profileData = profile
+            console.log("[v0] Using public profile:", profile.id)
+          } else if (profile) {
+            console.log("[v0] Profile found but not public, privacy_level:", profile.privacy_level)
           }
+        } else {
+          console.log("[v0] No user found for:", params.username)
         }
       }
 
