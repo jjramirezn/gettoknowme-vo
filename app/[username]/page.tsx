@@ -23,6 +23,8 @@ export default function PublicProfilePage({ params }: { params: { username: stri
   useEffect(() => {
     const loadProfileData = async () => {
       try {
+        console.log("[v0] Loading profile for:", params.username)
+
         const {
           data: { user: authUser },
         } = await supabase.auth.getUser()
@@ -31,14 +33,18 @@ export default function PublicProfilePage({ params }: { params: { username: stri
         let profileData = null
         const socialLinksData = []
 
+        const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(params.username)
+
         if (authUser) {
           const { data: userProfile } = await supabase.from("users").select("username").eq("id", authUser.id).single()
+          console.log("[v0] Current user profile:", userProfile)
 
-          const isOwn = userProfile?.username === params.username
+          const isOwn = isUUID ? authUser.id === params.username : userProfile?.username === params.username
           setIsOwnProfile(isOwn)
 
           if (isOwn) {
             const { data: profile } = await supabase.from("profiles").select("*").eq("user_id", authUser.id).single()
+            console.log("[v0] Own profile data:", profile)
 
             if (profile) {
               setProfileId(profile.id)
@@ -48,14 +54,27 @@ export default function PublicProfilePage({ params }: { params: { username: stri
         }
 
         if (!profileData) {
-          const { data: publicUser } = await supabase
-            .from("users")
-            .select("id, username")
-            .eq("username", params.username)
-            .single()
+          console.log("[v0] Looking for public profile, isUUID:", isUUID)
+
+          let publicUser = null
+
+          if (isUUID) {
+            const { data } = await supabase.from("users").select("id, username").eq("id", params.username).single()
+            publicUser = data
+          } else {
+            const { data } = await supabase
+              .from("users")
+              .select("id, username")
+              .eq("username", params.username)
+              .single()
+            publicUser = data
+          }
+
+          console.log("[v0] Public user found:", publicUser)
 
           if (publicUser) {
             const { data: profile } = await supabase.from("profiles").select("*").eq("user_id", publicUser.id).single()
+            console.log("[v0] Public profile data:", profile)
 
             if (profile) {
               setProfileId(profile.id)
@@ -85,8 +104,8 @@ export default function PublicProfilePage({ params }: { params: { username: stri
           }
 
           setUserData({
-            username: params.username,
-            displayName: params.username,
+            username: profileData.username || params.username,
+            displayName: profileData.display_name || profileData.username || params.username,
             bio: profileData.bio || "No bio available",
             profileImage: profileData.profile_picture_url || "/abstract-profile.png",
             location: profileData.location || "",
@@ -97,13 +116,17 @@ export default function PublicProfilePage({ params }: { params: { username: stri
             followers: "0",
             following: "0",
           })
+        } else {
+          console.log("[v0] No profile found for:", params.username)
+          setUserData(null)
         }
 
         if (isOwnProfile && searchParams.get("edit") === "true") {
           setIsEditMode(true)
         }
       } catch (error) {
-        console.error("Error loading profile:", error)
+        console.error("[v0] Error loading profile:", error)
+        setUserData(null)
       } finally {
         setIsLoading(false)
       }
@@ -168,11 +191,25 @@ export default function PublicProfilePage({ params }: { params: { username: stri
     }
   }
 
-  if (isLoading || !userData || !profileId) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/5 flex items-center justify-center">
         <div className="text-center text-muted-foreground">
           <p>Loading profile...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!userData || !profileId) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/5 flex items-center justify-center">
+        <div className="text-center text-muted-foreground">
+          <h1 className="text-2xl font-bold mb-2">Profile Not Found</h1>
+          <p>The profile "{params.username}" doesn't exist or isn't public.</p>
+          <Button onClick={() => router.push("/")} className="mt-4" variant="outline">
+            Go Home
+          </Button>
         </div>
       </div>
     )
