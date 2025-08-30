@@ -2,72 +2,8 @@
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Share2, Palette } from "lucide-react"
+import { Share2 } from "lucide-react"
 import { WidgetGrid } from "@/components/widget-system"
-
-// Theme configurations
-const themes = {
-  default: {
-    colors: {
-      primary: "#3B82F6",
-      secondary: "#10B981",
-      background: "#FFFFFF",
-      foreground: "#374151",
-      accent: "#F3F4F6",
-    },
-    gradientClass: "from-blue-500 to-blue-600",
-  },
-  sunset: {
-    colors: {
-      primary: "#F97316",
-      secondary: "#EC4899",
-      background: "#FFF7ED",
-      foreground: "#9A3412",
-      accent: "#FED7AA",
-    },
-    gradientClass: "from-orange-500 to-pink-500",
-  },
-  forest: {
-    colors: {
-      primary: "#059669",
-      secondary: "#84CC16",
-      background: "#F0FDF4",
-      foreground: "#064E3B",
-      accent: "#DCFCE7",
-    },
-    gradientClass: "from-emerald-600 to-lime-500",
-  },
-  midnight: {
-    colors: {
-      primary: "#8B5CF6",
-      secondary: "#06B6D4",
-      background: "#0F172A",
-      foreground: "#F1F5F9",
-      accent: "#1E293B",
-    },
-    gradientClass: "from-slate-900 to-purple-900",
-  },
-  coral: {
-    colors: {
-      primary: "#FF6B6B",
-      secondary: "#4ECDC4",
-      background: "#FFFBF7",
-      foreground: "#2D3748",
-      accent: "#FED7D7",
-    },
-    gradientClass: "from-red-400 to-teal-400",
-  },
-  monochrome: {
-    colors: {
-      primary: "#000000",
-      secondary: "#6B7280",
-      background: "#FFFFFF",
-      foreground: "#111827",
-      accent: "#F9FAFB",
-    },
-    gradientClass: "from-gray-900 to-gray-600",
-  },
-}
 
 // Mock user data - in real app this would come from database
 const mockUserData = {
@@ -79,7 +15,6 @@ const mockUserData = {
   joinDate: "March 2024",
   followers: "12.5K",
   following: "892",
-  theme: "default", // This would come from user settings
   connectedAccounts: [
     {
       platform: "Instagram",
@@ -127,21 +62,7 @@ const mockUserData = {
 
 export default function PublicProfilePage({ params }: { params: { username: string } }) {
   const user = mockUserData // In real app, fetch based on params.username
-  const [currentTheme, setCurrentTheme] = useState(user.theme)
   const [isEditMode, setIsEditMode] = useState(false)
-
-  const theme = themes[currentTheme as keyof typeof themes] || themes.default
-
-  // Apply theme styles dynamically
-  const themeStyles = {
-    backgroundColor: theme.colors.background,
-    color: theme.colors.foreground,
-  }
-
-  const primaryButtonStyle = {
-    backgroundColor: theme.colors.primary,
-    color: theme.colors.background,
-  }
 
   const profileData = {
     name: user.displayName,
@@ -155,36 +76,18 @@ export default function PublicProfilePage({ params }: { params: { username: stri
   }
 
   return (
-    <div className="min-h-screen" style={themeStyles}>
+    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/5">
       {/* Header */}
-      <header
-        className="border-b backdrop-blur-sm sticky top-0 z-50"
-        style={{ backgroundColor: `${theme.colors.background}CC`, borderColor: theme.colors.accent }}
-      >
+      <header className="border-b border-border/50 backdrop-blur-sm sticky top-0 z-50 bg-background/80">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-md" style={{ backgroundColor: theme.colors.primary }}>
+            <div className="w-6 h-6 rounded-md bg-primary">
               <span className="sr-only">GetToKnowMe</span>
             </div>
             <span className="font-semibold text-sm">GetToKnowMe</span>
           </div>
           <div className="flex items-center gap-2">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => {
-                const themeKeys = Object.keys(themes)
-                const currentIndex = themeKeys.indexOf(currentTheme)
-                const nextIndex = (currentIndex + 1) % themeKeys.length
-                setCurrentTheme(themeKeys[nextIndex])
-              }}
-              className="flex items-center gap-2"
-              style={{ borderColor: theme.colors.primary, color: theme.colors.primary }}
-            >
-              <Palette className="w-4 h-4" />
-              Theme
-            </Button>
-            <Button size="sm" className="flex items-center gap-2" style={primaryButtonStyle}>
+            <Button size="sm" className="flex items-center gap-2">
               <Share2 className="w-4 h-4" />
               Share Profile
             </Button>
@@ -197,15 +100,14 @@ export default function PublicProfilePage({ params }: { params: { username: stri
         <WidgetGrid
           accounts={user.connectedAccounts}
           profileData={profileData}
-          theme={theme}
           isEditMode={isEditMode}
           onEditModeChange={setIsEditMode}
         />
 
         {/* Footer */}
-        <div className="text-center mt-12 pt-8 border-t" style={{ borderColor: theme.colors.accent }}>
-          <p className="text-sm opacity-70">
-            Powered by <span className="font-semibold">GetToKnowMe</span> • Create your own profile
+        <div className="text-center mt-12 pt-8 border-t border-border/50">
+          <p className="text-sm text-muted-foreground">
+            Powered by <span className="font-semibold text-foreground">GetToKnowMe</span> • Create your own profile
           </p>
         </div>
       </div>

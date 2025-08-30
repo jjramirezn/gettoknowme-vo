@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useCallback } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -30,7 +30,7 @@ const WIDGET_SIZES = {
 
 interface WidgetConfig {
   id: string
-  type: "social" | "profile" // Added widget type to distinguish between social and profile widgets
+  type: "social" | "profile"
   platform?: string
   size: keyof typeof WIDGET_SIZES
   position: { x: number; y: number }
@@ -60,55 +60,75 @@ interface ProfileData {
 
 interface WidgetProps {
   config: WidgetConfig
-  theme: any
   onConfigChange: (id: string, newConfig: Partial<WidgetConfig>) => void
   isEditMode: boolean
-  account?: SocialAccount // Made account optional since profile widget doesn't need it
-  profileData?: ProfileData // Added profile data for profile widget
+  account?: SocialAccount
+  profileData?: ProfileData
 }
 
-function ProfileWidget({ config, theme, onConfigChange, isEditMode, profileData }: WidgetProps) {
+function ProfileWidget({ config, onConfigChange, isEditMode, profileData }: WidgetProps) {
   const [isDragging, setIsDragging] = useState(false)
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
   const [position, setPosition] = useState(config.position)
   const widgetRef = useRef<HTMLDivElement>(null)
+  const animationFrameRef = useRef<number>()
 
   const sizeConfig = WIDGET_SIZES[config.size]
 
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if (!isEditMode) return
-    setIsDragging(true)
-    setDragStart({
-      x: e.clientX - position.x,
-      y: e.clientY - position.y,
-    })
-  }
+  const handleMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      if (!isEditMode) return
+      e.preventDefault()
+      setIsDragging(true)
+      setDragStart({
+        x: e.clientX - position.x,
+        y: e.clientY - position.y,
+      })
+    },
+    [isEditMode, position],
+  )
 
-  const handleMouseMove = (e: MouseEvent) => {
-    if (!isDragging || !isEditMode) return
-    const newPosition = {
-      x: e.clientX - dragStart.x,
-      y: e.clientY - dragStart.y,
-    }
-    setPosition(newPosition)
-  }
+  const handleMouseMove = useCallback(
+    (e: MouseEvent) => {
+      if (!isDragging || !isEditMode) return
 
-  const handleMouseUp = () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current)
+      }
+
+      animationFrameRef.current = requestAnimationFrame(() => {
+        const newPosition = {
+          x: Math.max(0, e.clientX - dragStart.x),
+          y: Math.max(0, e.clientY - dragStart.y),
+        }
+        setPosition(newPosition)
+      })
+    },
+    [isDragging, isEditMode, dragStart],
+  )
+
+  const handleMouseUp = useCallback(() => {
     if (!isDragging) return
     setIsDragging(false)
     onConfigChange(config.id, { position })
-  }
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current)
+    }
+  }, [isDragging, position, config.id, onConfigChange])
 
   useEffect(() => {
     if (isDragging) {
-      document.addEventListener("mousemove", handleMouseMove)
+      document.addEventListener("mousemove", handleMouseMove, { passive: false })
       document.addEventListener("mouseup", handleMouseUp)
       return () => {
         document.removeEventListener("mousemove", handleMouseMove)
         document.removeEventListener("mouseup", handleMouseUp)
+        if (animationFrameRef.current) {
+          cancelAnimationFrame(animationFrameRef.current)
+        }
       }
     }
-  }, [isDragging, dragStart, position])
+  }, [isDragging, handleMouseMove, handleMouseUp])
 
   const toggleSize = () => {
     const sizes = Object.keys(WIDGET_SIZES) as (keyof typeof WIDGET_SIZES)[]
@@ -126,16 +146,15 @@ function ProfileWidget({ config, theme, onConfigChange, isEditMode, profileData 
   return (
     <Card
       ref={widgetRef}
-      className={`absolute border-2 transition-all duration-200 ${
+      className={`absolute border-2 transition-all duration-150 ${
         isDragging ? "shadow-2xl scale-105 z-50" : "hover:shadow-lg"
-      } ${isEditMode ? "cursor-move" : ""}`}
+      } ${isEditMode ? "cursor-move" : ""} bg-card border-border`}
       style={{
         left: position.x,
         top: position.y,
         width: sizeConfig.minWidth,
         minHeight: sizeConfig.minHeight,
-        borderColor: theme.colors.accent,
-        backgroundColor: theme.colors.background,
+        transform: isDragging ? "scale(1.02)" : "scale(1)",
       }}
       onMouseDown={handleMouseDown}
     >
@@ -143,15 +162,10 @@ function ProfileWidget({ config, theme, onConfigChange, isEditMode, profileData 
         {/* Widget Header */}
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <div
-              className={`w-8 h-8 rounded-lg flex items-center justify-center text-white text-sm`}
-              style={{ backgroundColor: theme.colors.primary }}
-            >
-              👤
-            </div>
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-sm bg-primary">👤</div>
             <div>
               <h3 className="font-semibold text-sm">Profile</h3>
-              <p className="text-xs opacity-70">@{profileData.username}</p>
+              <p className="text-xs text-muted-foreground">@{profileData.username}</p>
             </div>
           </div>
 
@@ -178,7 +192,7 @@ function ProfileWidget({ config, theme, onConfigChange, isEditMode, profileData 
 
             {isEditMode && (
               <div className="cursor-move">
-                <GripVertical className="w-4 h-4 opacity-50" />
+                <GripVertical className="w-4 h-4 text-muted-foreground" />
               </div>
             )}
           </div>
@@ -206,8 +220,8 @@ function ProfileWidget({ config, theme, onConfigChange, isEditMode, profileData 
               />
               <div className="flex-1">
                 <h3 className="font-bold text-lg">{profileData.name}</h3>
-                <p className="text-sm opacity-70 mb-2">{profileData.bio}</p>
-                <div className="flex items-center gap-4 text-xs opacity-60">
+                <p className="text-sm text-muted-foreground mb-2">{profileData.bio}</p>
+                <div className="flex items-center gap-4 text-xs text-muted-foreground">
                   <div className="flex items-center gap-1">
                     <Users className="w-3 h-3" />
                     {profileData.followers}
@@ -230,24 +244,18 @@ function ProfileWidget({ config, theme, onConfigChange, isEditMode, profileData 
               />
               <div>
                 <h3 className="font-bold text-xl mb-1">{profileData.name}</h3>
-                <p className="text-sm opacity-70 mb-3">{profileData.bio}</p>
+                <p className="text-sm text-muted-foreground mb-3">{profileData.bio}</p>
                 <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div
-                    className="flex items-center justify-center gap-2 p-2 rounded"
-                    style={{ backgroundColor: theme.colors.accent }}
-                  >
+                  <div className="flex items-center justify-center gap-2 p-2 rounded bg-muted">
                     <Users className="w-4 h-4" />
                     <span>{profileData.followers} followers</span>
                   </div>
-                  <div
-                    className="flex items-center justify-center gap-2 p-2 rounded"
-                    style={{ backgroundColor: theme.colors.accent }}
-                  >
+                  <div className="flex items-center justify-center gap-2 p-2 rounded bg-muted">
                     <MapPin className="w-4 h-4" />
                     <span>{profileData.location}</span>
                   </div>
                 </div>
-                <div className="flex items-center justify-center gap-2 mt-2 text-xs opacity-60">
+                <div className="flex items-center justify-center gap-2 mt-2 text-xs text-muted-foreground">
                   <Calendar className="w-3 h-3" />
                   <span>Joined {profileData.joinDate}</span>
                 </div>
@@ -260,48 +268,69 @@ function ProfileWidget({ config, theme, onConfigChange, isEditMode, profileData 
   )
 }
 
-function SocialWidget({ account, config, theme, onConfigChange, isEditMode }: WidgetProps) {
+function SocialWidget({ account, config, onConfigChange, isEditMode }: WidgetProps) {
   const [isDragging, setIsDragging] = useState(false)
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
   const [position, setPosition] = useState(config.position)
   const widgetRef = useRef<HTMLDivElement>(null)
+  const animationFrameRef = useRef<number>()
 
   const sizeConfig = WIDGET_SIZES[config.size]
 
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if (!isEditMode) return
-    setIsDragging(true)
-    setDragStart({
-      x: e.clientX - position.x,
-      y: e.clientY - position.y,
-    })
-  }
+  const handleMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      if (!isEditMode) return
+      e.preventDefault()
+      setIsDragging(true)
+      setDragStart({
+        x: e.clientX - position.x,
+        y: e.clientY - position.y,
+      })
+    },
+    [isEditMode, position],
+  )
 
-  const handleMouseMove = (e: MouseEvent) => {
-    if (!isDragging || !isEditMode) return
-    const newPosition = {
-      x: e.clientX - dragStart.x,
-      y: e.clientY - dragStart.y,
-    }
-    setPosition(newPosition)
-  }
+  const handleMouseMove = useCallback(
+    (e: MouseEvent) => {
+      if (!isDragging || !isEditMode) return
 
-  const handleMouseUp = () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current)
+      }
+
+      animationFrameRef.current = requestAnimationFrame(() => {
+        const newPosition = {
+          x: Math.max(0, e.clientX - dragStart.x),
+          y: Math.max(0, e.clientY - dragStart.y),
+        }
+        setPosition(newPosition)
+      })
+    },
+    [isDragging, isEditMode, dragStart],
+  )
+
+  const handleMouseUp = useCallback(() => {
     if (!isDragging) return
     setIsDragging(false)
     onConfigChange(config.id, { position })
-  }
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current)
+    }
+  }, [isDragging, position, config.id, onConfigChange])
 
   useEffect(() => {
     if (isDragging) {
-      document.addEventListener("mousemove", handleMouseMove)
+      document.addEventListener("mousemove", handleMouseMove, { passive: false })
       document.addEventListener("mouseup", handleMouseUp)
       return () => {
         document.removeEventListener("mousemove", handleMouseMove)
         document.removeEventListener("mouseup", handleMouseUp)
+        if (animationFrameRef.current) {
+          cancelAnimationFrame(animationFrameRef.current)
+        }
       }
     }
-  }, [isDragging, dragStart, position])
+  }, [isDragging, handleMouseMove, handleMouseUp])
 
   const toggleSize = () => {
     const sizes = Object.keys(WIDGET_SIZES) as (keyof typeof WIDGET_SIZES)[]
@@ -319,16 +348,15 @@ function SocialWidget({ account, config, theme, onConfigChange, isEditMode }: Wi
   return (
     <Card
       ref={widgetRef}
-      className={`absolute border-2 transition-all duration-200 ${
+      className={`absolute border-2 transition-all duration-150 ${
         isDragging ? "shadow-2xl scale-105 z-50" : "hover:shadow-lg"
-      } ${isEditMode ? "cursor-move" : ""}`}
+      } ${isEditMode ? "cursor-move" : ""} bg-card border-border`}
       style={{
         left: position.x,
         top: position.y,
         width: sizeConfig.minWidth,
         minHeight: sizeConfig.minHeight,
-        borderColor: theme.colors.accent,
-        backgroundColor: theme.colors.background,
+        transform: isDragging ? "scale(1.02)" : "scale(1)",
       }}
       onMouseDown={handleMouseDown}
     >
@@ -341,7 +369,7 @@ function SocialWidget({ account, config, theme, onConfigChange, isEditMode }: Wi
             </div>
             <div>
               <h3 className="font-semibold text-sm">{account.platform}</h3>
-              <p className="text-xs opacity-70">{account.followers} followers</p>
+              <p className="text-xs text-muted-foreground">{account.followers} followers</p>
             </div>
           </div>
 
@@ -368,7 +396,7 @@ function SocialWidget({ account, config, theme, onConfigChange, isEditMode }: Wi
 
             {isEditMode && (
               <div className="cursor-move">
-                <GripVertical className="w-4 h-4 opacity-50" />
+                <GripVertical className="w-4 h-4 text-muted-foreground" />
               </div>
             )}
 
@@ -437,11 +465,7 @@ function SocialWidget({ account, config, theme, onConfigChange, isEditMode }: Wi
           {(config.size === "medium" || config.size === "large") && account.platform === "Twitter" && (
             <div className="space-y-2">
               {account.recentPosts?.slice(0, config.size === "large" ? 3 : 2).map((post, index) => (
-                <div
-                  key={index}
-                  className="border rounded p-2 text-xs"
-                  style={{ backgroundColor: theme.colors.accent }}
-                >
+                <div key={index} className="border rounded p-2 text-xs" style={{ backgroundColor: "var(--accent)" }}>
                   <p className="mb-1">{post.text}</p>
                   <div className="flex items-center gap-3 opacity-70">
                     <div className="flex items-center gap-1">
@@ -464,11 +488,11 @@ function SocialWidget({ account, config, theme, onConfigChange, isEditMode }: Wi
                 <div
                   key={index}
                   className="flex items-center gap-2 border rounded p-2"
-                  style={{ backgroundColor: theme.colors.accent }}
+                  style={{ backgroundColor: "var(--accent)" }}
                 >
                   <div
                     className="w-12 h-8 rounded flex items-center justify-center text-xs"
-                    style={{ backgroundColor: theme.colors.primary, color: theme.colors.background }}
+                    style={{ backgroundColor: "var(--primary)", color: "var(--background)" }}
                   >
                     {post.duration}
                   </div>
@@ -488,13 +512,12 @@ function SocialWidget({ account, config, theme, onConfigChange, isEditMode }: Wi
 
 interface WidgetGridProps {
   accounts: SocialAccount[]
-  profileData: ProfileData // Added profileData prop
-  theme: any
+  profileData: ProfileData
   isEditMode: boolean
   onEditModeChange: (editMode: boolean) => void
 }
 
-export function WidgetGrid({ accounts, profileData, theme, isEditMode, onEditModeChange }: WidgetGridProps) {
+export function WidgetGrid({ accounts, profileData, isEditMode, onEditModeChange }: WidgetGridProps) {
   const [widgetConfigs, setWidgetConfigs] = useState<WidgetConfig[]>(() => {
     const socialConfigs = accounts.map((account, index) => ({
       id: `widget-${account.platform.toLowerCase()}`,
@@ -534,7 +557,7 @@ export function WidgetGrid({ accounts, profileData, theme, isEditMode, onEditMod
             visible: true,
           }
         }
-        const socialIndex = index - 1 // Account for profile widget being first
+        const socialIndex = index - 1
         return {
           ...config,
           position: {
@@ -553,44 +576,30 @@ export function WidgetGrid({ accounts, profileData, theme, isEditMode, onEditMod
       {/* Edit Mode Controls */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Button
-            variant={isEditMode ? "default" : "outline"}
-            size="sm"
-            onClick={() => onEditModeChange(!isEditMode)}
-            style={
-              isEditMode
-                ? { backgroundColor: theme.colors.primary, color: theme.colors.background }
-                : { borderColor: theme.colors.primary, color: theme.colors.primary }
-            }
-          >
+          <Button variant={isEditMode ? "default" : "outline"} size="sm" onClick={() => onEditModeChange(!isEditMode)}>
             <Settings className="w-4 h-4 mr-2" />
             {isEditMode ? "Done Editing" : "Customize Layout"}
           </Button>
 
           {isEditMode && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={resetLayout}
-              style={{ borderColor: theme.colors.secondary, color: theme.colors.secondary }}
-            >
+            <Button variant="outline" size="sm" onClick={resetLayout}>
               Reset Layout
             </Button>
           )}
         </div>
 
         {isEditMode && (
-          <div className="text-sm opacity-70">Drag widgets to reposition • Click settings to resize or hide</div>
+          <div className="text-sm text-muted-foreground">
+            Drag widgets to reposition • Click settings to resize or hide
+          </div>
         )}
       </div>
 
       {/* Widget Container */}
       <div
-        className="relative min-h-[600px] border-2 border-dashed rounded-lg"
-        style={{
-          borderColor: isEditMode ? theme.colors.primary : "transparent",
-          backgroundColor: isEditMode ? `${theme.colors.accent}50` : "transparent",
-        }}
+        className={`relative min-h-[600px] border-2 border-dashed rounded-lg transition-all duration-200 ${
+          isEditMode ? "border-primary bg-primary/5" : "border-transparent"
+        }`}
       >
         {widgetConfigs.map((config) => {
           if (config.type === "profile") {
@@ -598,7 +607,6 @@ export function WidgetGrid({ accounts, profileData, theme, isEditMode, onEditMod
               <ProfileWidget
                 key={config.id}
                 config={config}
-                theme={theme}
                 onConfigChange={handleConfigChange}
                 isEditMode={isEditMode}
                 profileData={profileData}
@@ -613,7 +621,6 @@ export function WidgetGrid({ accounts, profileData, theme, isEditMode, onEditMod
                 key={config.id}
                 account={account}
                 config={config}
-                theme={theme}
                 onConfigChange={handleConfigChange}
                 isEditMode={isEditMode}
               />
@@ -623,7 +630,7 @@ export function WidgetGrid({ accounts, profileData, theme, isEditMode, onEditMod
 
         {isEditMode && widgetConfigs.filter((c) => c.visible).length === 0 && (
           <div className="absolute inset-0 flex items-center justify-center">
-            <div className="text-center opacity-50">
+            <div className="text-center text-muted-foreground">
               <p>No visible widgets</p>
               <p className="text-sm">Use the settings menu to show widgets</p>
             </div>
