@@ -1,12 +1,13 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Eye, EyeOff, Plus, Calendar } from "lucide-react"
 
 import { WidgetBase, type WidgetConfig } from "@/components/widget-base"
 import { ProfileWidget } from "@/components/widgets/profile-widget"
 import { SocialWidget } from "@/components/widgets/social-widget"
+import { getWidgetLayouts, saveWidgetLayout } from "@/lib/database/widget-layouts"
 
 const WIDGET_TYPES = {
   profile: { name: "Profile", icon: "👤" },
@@ -86,33 +87,14 @@ function ENSWidget({
   isEditMode: boolean
 }) {
   return (
-    <WidgetBase config={config} onConfigChange={onConfigChange} isEditMode={isEditMode}>
-      <div className="flex items-center gap-2 mb-3">
-        <div className="w-8 h-8 bg-purple-500 rounded-lg flex items-center justify-center text-white text-sm">🔗</div>
-        <div>
-          <h3 className="font-semibold text-sm">ENS Identity</h3>
-          <p className="text-xs text-muted-foreground">alexcreator.eth</p>
-        </div>
-      </div>
-
-      <div className="space-y-3 h-full overflow-hidden">
-        <div className="text-center">
-          <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-3">
-            <span className="text-white font-bold text-lg">Ξ</span>
-          </div>
-          <h4 className="font-semibold mb-1">alexcreator.eth</h4>
-          <p className="text-xs text-muted-foreground mb-3">0x742d...4f2a</p>
-          <div className="grid grid-cols-2 gap-2 text-xs">
-            <div className="bg-muted rounded p-2">
-              <div className="font-semibold">2.5 ETH</div>
-              <div className="text-muted-foreground">Balance</div>
-            </div>
-            <div className="bg-muted rounded p-2">
-              <div className="font-semibold">12</div>
-              <div className="text-muted-foreground">NFTs</div>
-            </div>
-          </div>
-        </div>
+    <WidgetBase
+      config={config}
+      onConfigChange={onConfigChange}
+      isEditMode={isEditMode}
+      className="bg-gradient-to-br from-blue-400 to-blue-500"
+    >
+      <div className="text-center text-white">
+        <h3 className="font-bold text-lg">ENS.ETH</h3>
       </div>
     </WidgetBase>
   )
@@ -155,12 +137,45 @@ function CafecitoWidget({
 interface WidgetGridProps {
   accounts: SocialAccount[]
   profileData: ProfileData
+  profileId: string // Added profileId prop for database operations
   isEditMode: boolean
   onEditModeChange: (editMode: boolean) => void
 }
 
-export function WidgetGrid({ accounts, profileData, isEditMode, onEditModeChange }: WidgetGridProps) {
-  const [widgetConfigs, setWidgetConfigs] = useState<WidgetConfig[]>(() => {
+export function WidgetGrid({ accounts, profileData, profileId, isEditMode, onEditModeChange }: WidgetGridProps) {
+  const [widgetConfigs, setWidgetConfigs] = useState<WidgetConfig[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    async function loadWidgetConfigs() {
+      try {
+        const configs = await getWidgetLayouts(profileId)
+
+        // If no configs exist, create default ones
+        if (configs.length === 0) {
+          const defaultConfigs = createDefaultWidgetConfigs(accounts)
+          setWidgetConfigs(defaultConfigs)
+
+          // Save default configs to database
+          for (const config of defaultConfigs) {
+            await saveWidgetLayout(config, profileId)
+          }
+        } else {
+          setWidgetConfigs(configs)
+        }
+      } catch (error) {
+        console.error("Error loading widget configs:", error)
+        // Fallback to default configs
+        setWidgetConfigs(createDefaultWidgetConfigs(accounts))
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadWidgetConfigs()
+  }, [profileId, accounts])
+
+  function createDefaultWidgetConfigs(accounts: SocialAccount[]): WidgetConfig[] {
     const profileConfig: WidgetConfig = {
       id: "widget-profile",
       type: "profile" as const,
@@ -182,12 +197,13 @@ export function WidgetGrid({ accounts, profileData, isEditMode, onEditModeChange
     }))
 
     return [profileConfig, ...socialConfigs]
-  })
+  }
 
-  const handleConfigChange = (id: string, newConfig: Partial<WidgetConfig>) => {
+  const handleConfigChange = async (id: string, newConfig: Partial<WidgetConfig>) => {
     setWidgetConfigs((prev) => {
       const updatedConfigs = prev.map((config) => (config.id === id ? { ...config, ...newConfig } : config))
 
+      // Move widget to front if position or size changed
       if (newConfig.gridPosition || newConfig.gridSize) {
         const widgetIndex = updatedConfigs.findIndex((config) => config.id === id)
         if (widgetIndex !== -1) {
@@ -199,9 +215,16 @@ export function WidgetGrid({ accounts, profileData, isEditMode, onEditModeChange
 
       return updatedConfigs
     })
+
+    // Save to database
+    const updatedWidget = widgetConfigs.find((w) => w.id === id)
+    if (updatedWidget) {
+      const configToSave = { ...updatedWidget, ...newConfig }
+      await saveWidgetLayout(configToSave, profileId)
+    }
   }
 
-  const addWidget = (type: string) => {
+  const addWidget = async (type: string) => {
     const newWidget: WidgetConfig = {
       id: `widget-${type}-${Date.now()}`,
       type:
@@ -215,7 +238,19 @@ export function WidgetGrid({ accounts, profileData, isEditMode, onEditModeChange
       gridSize: { width: type === "cafecito" ? 1 : 2, height: type === "cafecito" ? 1 : 2 },
       visible: true,
     }
+
     setWidgetConfigs((prev) => [...prev, newWidget])
+    await saveWidgetLayout(newWidget, profileId)
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center text-muted-foreground">
+          <p>Loading widgets...</p>
+        </div>
+      </div>
+    )
   }
 
   return (

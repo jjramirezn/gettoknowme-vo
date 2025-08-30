@@ -66,6 +66,7 @@ export default function PublicProfilePage({ params }: { params: { username: stri
   const user = mockUserData // In real app, fetch based on params.username
   const [currentUser, setCurrentUser] = useState(null)
   const [isOwnProfile, setIsOwnProfile] = useState(false)
+  const [profileId, setProfileId] = useState<string | null>(null)
   const router = useRouter()
   const searchParams = useSearchParams()
   const supabase = createClient()
@@ -79,11 +80,31 @@ export default function PublicProfilePage({ params }: { params: { username: stri
       } = await supabase.auth.getUser()
       setCurrentUser(authUser)
 
-      // Check if this is the user's own profile
-      const profileUsername = authUser?.user_metadata?.username || authUser?.id
-      setIsOwnProfile(profileUsername === params.username)
+      if (authUser) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("id, user_id")
+          .eq("user_id", authUser.id)
+          .single()
 
-      // If it's their own profile and edit=true in URL, enable edit mode
+        if (profile) {
+          setProfileId(profile.id)
+
+          const profileUsername = authUser?.user_metadata?.username || authUser?.id
+          setIsOwnProfile(profileUsername === params.username)
+        }
+      } else {
+        const { data: publicProfile } = await supabase
+          .from("profiles")
+          .select("id, user_id, users!inner(username)")
+          .eq("users.username", params.username)
+          .single()
+
+        if (publicProfile) {
+          setProfileId(publicProfile.id)
+        }
+      }
+
       if (isOwnProfile && searchParams.get("edit") === "true") {
         setIsEditMode(true)
       }
@@ -101,7 +122,6 @@ export default function PublicProfilePage({ params }: { params: { username: stri
     const newEditMode = !isEditMode
     setIsEditMode(newEditMode)
 
-    // Update URL without page reload
     const url = new URL(window.location.href)
     if (newEditMode) {
       url.searchParams.set("edit", "true")
@@ -134,6 +154,16 @@ export default function PublicProfilePage({ params }: { params: { username: stri
     joinDate: user.joinDate,
     followers: user.followers,
     following: user.following,
+  }
+
+  if (!profileId) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/5 flex items-center justify-center">
+        <div className="text-center text-muted-foreground">
+          <p>Loading profile...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -174,6 +204,7 @@ export default function PublicProfilePage({ params }: { params: { username: stri
         <WidgetGrid
           accounts={user.connectedAccounts}
           profileData={profileData}
+          profileId={profileId}
           isEditMode={isEditMode && isOwnProfile}
           onEditModeChange={setIsEditMode}
         />
