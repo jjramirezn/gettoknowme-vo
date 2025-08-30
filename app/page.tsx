@@ -19,11 +19,23 @@ export default function HomePage() {
         data: { user },
       } = await supabase.auth.getUser()
       if (user) {
-        const { data: profile } = await supabase.from("profiles").select("username").eq("user_id", user.id).single()
+        console.log("[v0] User found:", user.id)
+        const { data: profile, error } = await supabase
+          .from("profiles")
+          .select("username")
+          .eq("user_id", user.id)
+          .single()
+
+        console.log("[v0] Profile data:", profile)
+        console.log("[v0] Profile error:", error)
+        console.log("[v0] Username:", profile?.username)
+        console.log("[v0] Starts with anon_:", profile?.username?.startsWith("anon_"))
 
         if (!profile?.username || profile.username.startsWith("anon_")) {
+          console.log("[v0] Redirecting to username setup")
           router.push("/username-setup")
         } else {
+          console.log("[v0] Redirecting to profile:", profile.username)
           router.push(`/${profile.username}?edit=true`)
         }
       }
