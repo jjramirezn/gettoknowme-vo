@@ -1,9 +1,11 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Share2 } from "lucide-react"
+import { Share2, LogOut, Edit3, Eye } from "lucide-react"
 import { WidgetGrid } from "@/components/widget-system"
+import { createClient } from "@/lib/supabase/client"
+import { useRouter, useSearchParams } from "next/navigation"
 
 // Mock user data - in real app this would come from database
 const mockUserData = {
@@ -62,7 +64,66 @@ const mockUserData = {
 
 export default function PublicProfilePage({ params }: { params: { username: string } }) {
   const user = mockUserData // In real app, fetch based on params.username
-  const [isEditMode, setIsEditMode] = useState(false)
+  const [currentUser, setCurrentUser] = useState(null)
+  const [isOwnProfile, setIsOwnProfile] = useState(false)
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const supabase = createClient()
+
+  const [isEditMode, setIsEditMode] = useState(searchParams.get("edit") === "true")
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const {
+        data: { user: authUser },
+      } = await supabase.auth.getUser()
+      setCurrentUser(authUser)
+
+      // Check if this is the user's own profile
+      const profileUsername = authUser?.user_metadata?.username || authUser?.id
+      setIsOwnProfile(profileUsername === params.username)
+
+      // If it's their own profile and edit=true in URL, enable edit mode
+      if (isOwnProfile && searchParams.get("edit") === "true") {
+        setIsEditMode(true)
+      }
+    }
+
+    checkAuth()
+  }, [params.username, searchParams, supabase.auth])
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
+    router.push("/")
+  }
+
+  const handleEditToggle = () => {
+    const newEditMode = !isEditMode
+    setIsEditMode(newEditMode)
+
+    // Update URL without page reload
+    const url = new URL(window.location.href)
+    if (newEditMode) {
+      url.searchParams.set("edit", "true")
+    } else {
+      url.searchParams.delete("edit")
+    }
+    window.history.replaceState({}, "", url.toString())
+  }
+
+  const handleShare = async () => {
+    const profileUrl = `${window.location.origin}/${params.username}`
+    if (navigator.share) {
+      await navigator.share({
+        title: `${user.displayName} - GetToKnowMe`,
+        text: user.bio,
+        url: profileUrl,
+      })
+    } else {
+      await navigator.clipboard.writeText(profileUrl)
+      // Could add a toast notification here
+    }
+  }
 
   const profileData = {
     name: user.displayName,
@@ -77,39 +138,53 @@ export default function PublicProfilePage({ params }: { params: { username: stri
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/5">
-      {/* Header */}
-      <header className="border-b border-border/50 backdrop-blur-sm sticky top-0 z-50 bg-background/80">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-md bg-primary">
-              <span className="sr-only">GetToKnowMe</span>
+      {isOwnProfile && (
+        <header className="border-b border-border/50 backdrop-blur-sm sticky top-0 z-50 bg-background/80">
+          <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded-md bg-primary">
+                <span className="sr-only">GetToKnowMe</span>
+              </div>
+              <span className="font-semibold text-sm">GetToKnowMe</span>
             </div>
-            <span className="font-semibold text-sm">GetToKnowMe</span>
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleEditToggle}
+                className="flex items-center gap-2 bg-transparent"
+              >
+                {isEditMode ? <Eye className="w-4 h-4" /> : <Edit3 className="w-4 h-4" />}
+                {isEditMode ? "Preview" : "Edit"}
+              </Button>
+              <Button size="sm" onClick={handleShare} className="flex items-center gap-2">
+                <Share2 className="w-4 h-4" />
+                Share
+              </Button>
+              <Button size="sm" variant="ghost" onClick={handleLogout} className="flex items-center gap-2">
+                <LogOut className="w-4 h-4" />
+                Logout
+              </Button>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Button size="sm" className="flex items-center gap-2">
-              <Share2 className="w-4 h-4" />
-              Share Profile
-            </Button>
-          </div>
-        </div>
-      </header>
+        </header>
+      )}
 
       <div className="container mx-auto px-4 py-8 max-w-6xl">
-        {/* Widget Grid with Profile Widget */}
         <WidgetGrid
           accounts={user.connectedAccounts}
           profileData={profileData}
-          isEditMode={isEditMode}
+          isEditMode={isEditMode && isOwnProfile}
           onEditModeChange={setIsEditMode}
         />
 
-        {/* Footer */}
-        <div className="text-center mt-12 pt-8 border-t border-border/50">
-          <p className="text-sm text-muted-foreground">
-            Powered by <span className="font-semibold text-foreground">GetToKnowMe</span> • Create your own profile
-          </p>
-        </div>
+        {!isOwnProfile && (
+          <div className="text-center mt-12 pt-8 border-t border-border/50">
+            <p className="text-sm text-muted-foreground">
+              Powered by <span className="font-semibold text-foreground">GetToKnowMe</span> • Create your own profile
+            </p>
+          </div>
+        )}
       </div>
     </div>
   )

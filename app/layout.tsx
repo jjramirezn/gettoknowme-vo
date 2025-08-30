@@ -4,7 +4,6 @@ import { Inter } from "next/font/google"
 import { GeistMono } from "geist/font/mono"
 import { Analytics } from "@vercel/analytics/next"
 import { Suspense } from "react"
-import { Navigation } from "@/components/navigation"
 import "./globals.css"
 
 const inter = Inter({
@@ -34,7 +33,6 @@ export default function RootLayout({
         <meta name="tiktok-developers-site-verification" content="guMkUVloN63rDFwIpGC0fqIkMDQptm6V" />
       </head>
       <body className={`font-sans ${inter.variable} ${GeistMono.variable}`}>
-        <Navigation />
         <Suspense fallback={null}>{children}</Suspense>
         <Analytics />
       </body>

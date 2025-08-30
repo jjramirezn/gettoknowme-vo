@@ -6,7 +6,19 @@ import { useState, useRef, useEffect, useCallback } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Settings, GripVertical, ExternalLink, Heart, MessageCircle, Eye, MapPin, Calendar, Users } from "lucide-react"
+import {
+  Settings,
+  GripVertical,
+  ExternalLink,
+  Heart,
+  MessageCircle,
+  Eye,
+  MapPin,
+  Calendar,
+  Users,
+  Plus,
+  EyeOff,
+} from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 
 // Widget size configurations
@@ -17,9 +29,21 @@ const WIDGET_SIZES = {
   wide: { width: 3, height: 1, minWidth: 400, minHeight: 200 },
 }
 
+const WIDGET_TYPES = {
+  profile: { name: "Profile", icon: "👤", minWidth: 280, minHeight: 200 },
+  instagram: { name: "Instagram", icon: "📷", minWidth: 280, minHeight: 200 },
+  twitter: { name: "Twitter", icon: "🐦", minWidth: 280, minHeight: 200 },
+  youtube: { name: "YouTube", icon: "📺", minWidth: 280, minHeight: 200 },
+  github: { name: "GitHub", icon: "💻", minWidth: 280, minHeight: 200 },
+  linkedin: { name: "LinkedIn", icon: "💼", minWidth: 280, minHeight: 200 },
+  calendly: { name: "Calendly", icon: "📅", minWidth: 280, minHeight: 200 },
+  ens: { name: "ENS Identity", icon: "🔗", minWidth: 280, minHeight: 200 },
+  cafecito: { name: "Cafecito", icon: "☕", minWidth: 200, minHeight: 80, maxWidth: 300, maxHeight: 120 }, // Button-only widget
+}
+
 interface WidgetConfig {
   id: string
-  type: "social" | "profile"
+  type: "social" | "profile" | "service"
   platform?: string
   dimensions: { width: number; height: number }
   position: { x: number; y: number }
@@ -80,6 +104,8 @@ function ProfileWidget({ config, onConfigChange, isEditMode, profileData }: Widg
       if (!isEditMode) return
       e.preventDefault()
 
+      onConfigChange(config.id, { position: config.position })
+
       const rect = widgetRef.current?.getBoundingClientRect()
       if (!rect) return
 
@@ -102,7 +128,7 @@ function ProfileWidget({ config, onConfigChange, isEditMode, profileData }: Widg
         })
       }
     },
-    [isEditMode, position, config.dimensions],
+    [isEditMode, position, config.dimensions, config.id, onConfigChange],
   )
 
   const handleMouseMove = useCallback(
@@ -356,6 +382,8 @@ function SocialWidget({ account, config, onConfigChange, isEditMode }: WidgetPro
       if (!isEditMode) return
       e.preventDefault()
 
+      onConfigChange(config.id, { position: config.position })
+
       const rect = widgetRef.current?.getBoundingClientRect()
       if (!rect) return
 
@@ -378,7 +406,7 @@ function SocialWidget({ account, config, onConfigChange, isEditMode }: WidgetPro
         })
       }
     },
-    [isEditMode, position, config.dimensions],
+    [isEditMode, position, config.dimensions, config.id, onConfigChange],
   )
 
   const handleMouseMove = useCallback(
@@ -792,6 +820,594 @@ function SocialWidget({ account, config, onConfigChange, isEditMode }: WidgetPro
   )
 }
 
+function CalendlyWidget({ config, onConfigChange, isEditMode }: WidgetProps) {
+  // ... existing drag/resize logic ...
+  const [isDragging, setIsDragging] = useState(false)
+  const [isResizing, setIsResizing] = useState(false)
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
+  const [resizeStart, setResizeStart] = useState({ x: 0, y: 0, width: 0, height: 0 })
+  const [resizePreview, setResizePreview] = useState<{ width: number; height: number } | null>(null)
+  const [position, setPosition] = useState(config.position)
+  const widgetRef = useRef<HTMLDivElement>(null)
+  const animationFrameRef = useRef<number>()
+
+  const minWidth = 280
+  const minHeight = 200
+  const maxWidth = 600
+  const maxHeight = 500
+
+  const handleMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      if (!isEditMode) return
+      e.preventDefault()
+
+      const rect = widgetRef.current?.getBoundingClientRect()
+      if (!rect) return
+
+      const offsetX = e.clientX - rect.left
+      const offsetY = e.clientY - rect.top
+
+      if (isResizeHandleClick(offsetX, offsetY, rect.width, rect.height)) {
+        setIsResizing(true)
+        setResizeStart({
+          x: e.clientX,
+          y: e.clientY,
+          width: config.dimensions.width,
+          height: config.dimensions.height,
+        })
+      } else {
+        setIsDragging(true)
+        setDragStart({
+          x: e.clientX - position.x,
+          y: e.clientY - position.y,
+        })
+      }
+    },
+    [isEditMode, position, config.dimensions],
+  )
+
+  const handleMouseMove = useCallback(
+    (e: MouseEvent) => {
+      if ((!isDragging && !isResizing) || !isEditMode) return
+
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current)
+      }
+
+      animationFrameRef.current = requestAnimationFrame(() => {
+        if (isDragging) {
+          const newPosition = {
+            x: Math.max(0, e.clientX - dragStart.x),
+            y: Math.max(0, e.clientY - dragStart.y),
+          }
+          setPosition(newPosition)
+        } else if (isResizing) {
+          const deltaX = e.clientX - resizeStart.x
+          const deltaY = e.clientY - resizeStart.y
+
+          const newWidth = Math.max(minWidth, Math.min(maxWidth, resizeStart.width + deltaX))
+          const newHeight = Math.max(minHeight, Math.min(maxHeight, resizeStart.height + deltaY))
+
+          setResizePreview({ width: newWidth, height: newHeight })
+        }
+      })
+    },
+    [isDragging, isResizing, isEditMode, dragStart, resizeStart, minWidth, minHeight, maxWidth, maxHeight],
+  )
+
+  const handleMouseUp = useCallback(() => {
+    if (!isDragging && !isResizing) return
+
+    setIsDragging(false)
+
+    if (isDragging) {
+      onConfigChange(config.id, { position })
+    }
+
+    if (isResizing && resizePreview) {
+      onConfigChange(config.id, { dimensions: resizePreview })
+      setResizePreview(null)
+    }
+
+    setIsResizing(false)
+
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current)
+    }
+  }, [isDragging, isResizing, position, resizePreview, config.id, onConfigChange])
+
+  useEffect(() => {
+    if (isDragging || isResizing) {
+      document.addEventListener("mousemove", handleMouseMove, { passive: false })
+      document.addEventListener("mouseup", handleMouseUp)
+      return () => {
+        document.removeEventListener("mousemove", handleMouseMove)
+        document.removeEventListener("mouseup", handleMouseUp)
+        if (animationFrameRef.current) {
+          cancelAnimationFrame(animationFrameRef.current)
+        }
+      }
+    }
+  }, [isDragging, isResizing, handleMouseMove, handleMouseUp])
+
+  const toggleVisibility = () => {
+    onConfigChange(config.id, { visible: !config.visible })
+  }
+
+  if (!config.visible) return null
+
+  const currentDimensions = resizePreview || config.dimensions
+
+  return (
+    <>
+      {isResizing && resizePreview && (
+        <div
+          className="absolute border-2 border-dashed border-primary bg-primary/10 pointer-events-none z-40"
+          style={{
+            left: position.x,
+            top: position.y,
+            width: resizePreview.width,
+            height: resizePreview.height,
+          }}
+        />
+      )}
+
+      <Card
+        ref={widgetRef}
+        className={`absolute border-2 transition-all duration-75 ${
+          isDragging ? "shadow-2xl scale-105 z-50" : "hover:shadow-lg"
+        } ${isEditMode ? "cursor-move" : ""} bg-card border-border ${isResizing ? "z-30" : ""}`}
+        style={{
+          left: position.x,
+          top: position.y,
+          width: currentDimensions.width,
+          height: currentDimensions.height,
+          transform: isDragging ? "scale(1.02)" : "scale(1)",
+        }}
+        onMouseDown={handleMouseDown}
+      >
+        <CardContent className="p-4 h-full overflow-hidden">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center text-white text-sm">
+                📅
+              </div>
+              <div>
+                <h3 className="font-semibold text-sm">Calendly</h3>
+                <p className="text-xs text-muted-foreground">Schedule a meeting</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-1">
+              {isEditMode && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                      <Settings className="w-3 h-3" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuItem onClick={toggleVisibility}>
+                      <Eye className="w-4 h-4 mr-2" />
+                      Hide Widget
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+
+              {isEditMode && (
+                <div className="cursor-move">
+                  <GripVertical className="w-4 h-4 text-muted-foreground" />
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="space-y-3 h-full overflow-hidden">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                <Calendar className="w-8 h-8 text-blue-600" />
+              </div>
+              <h4 className="font-semibold mb-2">Book a 30-min call</h4>
+              <p className="text-sm text-muted-foreground mb-4">Let's discuss your project and see how I can help</p>
+              <Button className="w-full" size="sm">
+                Schedule Meeting
+              </Button>
+            </div>
+
+            {currentDimensions.height > 300 && (
+              <div className="space-y-2 text-xs text-muted-foreground">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <span>Usually responds within 2 hours</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                  <span>Available Mon-Fri, 9AM-6PM EST</span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {isEditMode && (
+            <div
+              className={`absolute bottom-0 right-0 w-4 h-4 cursor-nw-resize transition-all duration-150 ${
+                isResizing ? "bg-primary/60 scale-110" : "bg-primary/20 hover:bg-primary/40"
+              }`}
+              style={{
+                clipPath: "polygon(100% 0, 0 100%, 100% 100%)",
+              }}
+            >
+              <div
+                className={`absolute bottom-1 right-1 w-1 h-1 bg-primary rounded-full transition-all ${
+                  isResizing ? "scale-125" : ""
+                }`}
+              />
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </>
+  )
+}
+
+function ENSWidget({ config, onConfigChange, isEditMode }: WidgetProps) {
+  // ... existing drag/resize logic ...
+  const [isDragging, setIsDragging] = useState(false)
+  const [isResizing, setIsResizing] = useState(false)
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
+  const [resizeStart, setResizeStart] = useState({ x: 0, y: 0, width: 0, height: 0 })
+  const [resizePreview, setResizePreview] = useState<{ width: number; height: number } | null>(null)
+  const [position, setPosition] = useState(config.position)
+  const widgetRef = useRef<HTMLDivElement>(null)
+  const animationFrameRef = useRef<number>()
+
+  const minWidth = 280
+  const minHeight = 200
+  const maxWidth = 600
+  const maxHeight = 500
+
+  const handleMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      if (!isEditMode) return
+      e.preventDefault()
+
+      const rect = widgetRef.current?.getBoundingClientRect()
+      if (!rect) return
+
+      const offsetX = e.clientX - rect.left
+      const offsetY = e.clientY - rect.top
+
+      if (isResizeHandleClick(offsetX, offsetY, rect.width, rect.height)) {
+        setIsResizing(true)
+        setResizeStart({
+          x: e.clientX,
+          y: e.clientY,
+          width: config.dimensions.width,
+          height: config.dimensions.height,
+        })
+      } else {
+        setIsDragging(true)
+        setDragStart({
+          x: e.clientX - position.x,
+          y: e.clientY - position.y,
+        })
+      }
+    },
+    [isEditMode, position, config.dimensions],
+  )
+
+  const handleMouseMove = useCallback(
+    (e: MouseEvent) => {
+      if ((!isDragging && !isResizing) || !isEditMode) return
+
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current)
+      }
+
+      animationFrameRef.current = requestAnimationFrame(() => {
+        if (isDragging) {
+          const newPosition = {
+            x: Math.max(0, e.clientX - dragStart.x),
+            y: Math.max(0, e.clientY - dragStart.y),
+          }
+          setPosition(newPosition)
+        } else if (isResizing) {
+          const deltaX = e.clientX - resizeStart.x
+          const deltaY = e.clientY - resizeStart.y
+
+          const newWidth = Math.max(minWidth, Math.min(maxWidth, resizeStart.width + deltaX))
+          const newHeight = Math.max(minHeight, Math.min(maxHeight, resizeStart.height + deltaY))
+
+          setResizePreview({ width: newWidth, height: newHeight })
+        }
+      })
+    },
+    [isDragging, isResizing, isEditMode, dragStart, resizeStart, minWidth, minHeight, maxWidth, maxHeight],
+  )
+
+  const handleMouseUp = useCallback(() => {
+    if (!isDragging && !isResizing) return
+
+    setIsDragging(false)
+
+    if (isDragging) {
+      onConfigChange(config.id, { position })
+    }
+
+    if (isResizing && resizePreview) {
+      onConfigChange(config.id, { dimensions: resizePreview })
+      setResizePreview(null)
+    }
+
+    setIsResizing(false)
+
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current)
+    }
+  }, [isDragging, isResizing, position, resizePreview, config.id, onConfigChange])
+
+  useEffect(() => {
+    if (isDragging || isResizing) {
+      document.addEventListener("mousemove", handleMouseMove, { passive: false })
+      document.addEventListener("mouseup", handleMouseUp)
+      return () => {
+        document.removeEventListener("mousemove", handleMouseMove)
+        document.removeEventListener("mouseup", handleMouseUp)
+        if (animationFrameRef.current) {
+          cancelAnimationFrame(animationFrameRef.current)
+        }
+      }
+    }
+  }, [isDragging, isResizing, handleMouseMove, handleMouseUp])
+
+  const toggleVisibility = () => {
+    onConfigChange(config.id, { visible: !config.visible })
+  }
+
+  if (!config.visible) return null
+
+  const currentDimensions = resizePreview || config.dimensions
+
+  return (
+    <>
+      {isResizing && resizePreview && (
+        <div
+          className="absolute border-2 border-dashed border-primary bg-primary/10 pointer-events-none z-40"
+          style={{
+            left: position.x,
+            top: position.y,
+            width: resizePreview.width,
+            height: resizePreview.height,
+          }}
+        />
+      )}
+
+      <Card
+        ref={widgetRef}
+        className={`absolute border-2 transition-all duration-75 ${
+          isDragging ? "shadow-2xl scale-105 z-50" : "hover:shadow-lg"
+        } ${isEditMode ? "cursor-move" : ""} bg-card border-border ${isResizing ? "z-30" : ""}`}
+        style={{
+          left: position.x,
+          top: position.y,
+          width: currentDimensions.width,
+          height: currentDimensions.height,
+          transform: isDragging ? "scale(1.02)" : "scale(1)",
+        }}
+        onMouseDown={handleMouseDown}
+      >
+        <CardContent className="p-4 h-full overflow-hidden">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-purple-500 rounded-lg flex items-center justify-center text-white text-sm">
+                🔗
+              </div>
+              <div>
+                <h3 className="font-semibold text-sm">ENS Identity</h3>
+                <p className="text-xs text-muted-foreground">alexcreator.eth</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-1">
+              {isEditMode && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                      <Settings className="w-3 h-3" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuItem onClick={toggleVisibility}>
+                      <Eye className="w-4 h-4 mr-2" />
+                      Hide Widget
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+
+              {isEditMode && (
+                <div className="cursor-move">
+                  <GripVertical className="w-4 h-4 text-muted-foreground" />
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="space-y-3 h-full overflow-hidden">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-3">
+                <span className="text-white font-bold text-lg">Ξ</span>
+              </div>
+              <h4 className="font-semibold mb-1">alexcreator.eth</h4>
+              <p className="text-xs text-muted-foreground mb-3">0x742d...4f2a</p>
+
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="bg-muted rounded p-2">
+                  <div className="font-semibold">2.5 ETH</div>
+                  <div className="text-muted-foreground">Balance</div>
+                </div>
+                <div className="bg-muted rounded p-2">
+                  <div className="font-semibold">12</div>
+                  <div className="text-muted-foreground">NFTs</div>
+                </div>
+              </div>
+            </div>
+
+            {currentDimensions.height > 300 && (
+              <div className="space-y-2">
+                <h5 className="font-semibold text-xs">Recent Activity</h5>
+                <div className="space-y-1 text-xs">
+                  <div className="flex justify-between">
+                    <span>Received 0.1 ETH</span>
+                    <span className="text-muted-foreground">2h ago</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Minted NFT</span>
+                    <span className="text-muted-foreground">1d ago</span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {isEditMode && (
+            <div
+              className={`absolute bottom-0 right-0 w-4 h-4 cursor-nw-resize transition-all duration-150 ${
+                isResizing ? "bg-primary/60 scale-110" : "bg-primary/20 hover:bg-primary/40"
+              }`}
+              style={{
+                clipPath: "polygon(100% 0, 0 100%, 100% 100%)",
+              }}
+            >
+              <div
+                className={`absolute bottom-1 right-1 w-1 h-1 bg-primary rounded-full transition-all ${
+                  isResizing ? "scale-125" : ""
+                }`}
+              />
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </>
+  )
+}
+
+function CafecitoWidget({ config, onConfigChange, isEditMode }: WidgetProps) {
+  // ... existing drag logic (no resize for button-only widget) ...
+  const [isDragging, setIsDragging] = useState(false)
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
+  const [position, setPosition] = useState(config.position)
+  const widgetRef = useRef<HTMLDivElement>(null)
+
+  const handleMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      if (!isEditMode) return
+      e.preventDefault()
+
+      setIsDragging(true)
+      setDragStart({
+        x: e.clientX - position.x,
+        y: e.clientY - position.y,
+      })
+    },
+    [isEditMode, position],
+  )
+
+  const handleMouseMove = useCallback(
+    (e: MouseEvent) => {
+      if (!isDragging || !isEditMode) return
+
+      const newPosition = {
+        x: Math.max(0, e.clientX - dragStart.x),
+        y: Math.max(0, e.clientY - dragStart.y),
+      }
+      setPosition(newPosition)
+    },
+    [isDragging, isEditMode, dragStart],
+  )
+
+  const handleMouseUp = useCallback(() => {
+    if (!isDragging) return
+    setIsDragging(false)
+    onConfigChange(config.id, { position })
+  }, [isDragging, position, config.id, onConfigChange])
+
+  useEffect(() => {
+    if (isDragging) {
+      document.addEventListener("mousemove", handleMouseMove)
+      document.addEventListener("mouseup", handleMouseUp)
+      return () => {
+        document.removeEventListener("mousemove", handleMouseMove)
+        document.removeEventListener("mouseup", handleMouseUp)
+      }
+    }
+  }, [isDragging, handleMouseMove, handleMouseUp])
+
+  const toggleVisibility = () => {
+    onConfigChange(config.id, { visible: !config.visible })
+  }
+
+  if (!config.visible) return null
+
+  return (
+    <Card
+      ref={widgetRef}
+      className={`absolute border-2 transition-all duration-75 ${
+        isDragging ? "shadow-2xl scale-105 z-50" : "hover:shadow-lg"
+      } ${isEditMode ? "cursor-move" : ""} bg-card border-border`}
+      style={{
+        left: position.x,
+        top: position.y,
+        width: 250,
+        height: 80,
+        transform: isDragging ? "scale(1.02)" : "scale(1)",
+      }}
+      onMouseDown={handleMouseDown}
+    >
+      <CardContent className="p-3 h-full flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center text-white text-sm">☕</div>
+          <div>
+            <h3 className="font-semibold text-sm">Buy me a coffee</h3>
+            <p className="text-xs text-muted-foreground">Support my work</p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-1">
+          {isEditMode && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                  <Settings className="w-3 h-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem onClick={toggleVisibility}>
+                  <Eye className="w-4 h-4 mr-2" />
+                  Hide Widget
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+
+          {!isEditMode && (
+            <Button size="sm" className="bg-orange-500 hover:bg-orange-600">
+              ☕ $3
+            </Button>
+          )}
+
+          {isEditMode && (
+            <div className="cursor-move">
+              <GripVertical className="w-4 h-4 text-muted-foreground" />
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
 interface WidgetGridProps {
   accounts: SocialAccount[]
   profileData: ProfileData
@@ -821,11 +1437,68 @@ export function WidgetGrid({ accounts, profileData, isEditMode, onEditModeChange
       visible: true,
     }
 
-    return [profileConfig, ...socialConfigs]
+    const serviceConfigs = [
+      {
+        id: "widget-calendly",
+        type: "service" as const,
+        platform: "calendly",
+        dimensions: { width: 320, height: 280 },
+        position: { x: 20, y: 440 },
+        visible: false,
+      },
+      {
+        id: "widget-ens",
+        type: "service" as const,
+        platform: "ens",
+        dimensions: { width: 320, height: 280 },
+        position: { x: 360, y: 440 },
+        visible: false,
+      },
+      {
+        id: "widget-cafecito",
+        type: "service" as const,
+        platform: "cafecito",
+        dimensions: { width: 250, height: 80 },
+        position: { x: 700, y: 440 },
+        visible: false,
+      },
+    ]
+
+    return [profileConfig, ...socialConfigs, ...serviceConfigs]
   })
 
   const handleConfigChange = (id: string, newConfig: Partial<WidgetConfig>) => {
-    setWidgetConfigs((prev) => prev.map((config) => (config.id === id ? { ...config, ...newConfig } : config)))
+    setWidgetConfigs((prev) => {
+      const updatedConfigs = prev.map((config) => (config.id === id ? { ...config, ...newConfig } : config))
+
+      // If position changed (drag/resize), move widget to end of array (front)
+      if (newConfig.position || newConfig.dimensions) {
+        const widgetIndex = updatedConfigs.findIndex((config) => config.id === id)
+        if (widgetIndex !== -1) {
+          const widget = updatedConfigs[widgetIndex]
+          const otherWidgets = updatedConfigs.filter((config) => config.id !== id)
+          return [...otherWidgets, widget]
+        }
+      }
+
+      return updatedConfigs
+    })
+  }
+
+  const addWidget = (type: string) => {
+    const newWidget: WidgetConfig = {
+      id: `widget-${type}-${Date.now()}`,
+      type:
+        type === "profile" ? "profile" : type.includes("instagram") || type.includes("twitter") ? "social" : "service",
+      platform: type,
+      dimensions: {
+        width: WIDGET_TYPES[type as keyof typeof WIDGET_TYPES]?.minWidth || 320,
+        height: WIDGET_TYPES[type as keyof typeof WIDGET_TYPES]?.minHeight || 280,
+      },
+      position: { x: 20, y: 20 },
+      visible: true,
+    }
+    setWidgetConfigs((prev) => [...prev, newWidget])
   }
 
   const resetLayout = () => {
@@ -854,70 +1527,144 @@ export function WidgetGrid({ accounts, profileData, isEditMode, onEditModeChange
   }
 
   return (
-    <div className="space-y-4">
-      {/* Edit Mode Controls */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Button variant={isEditMode ? "default" : "outline"} size="sm" onClick={() => onEditModeChange(!isEditMode)}>
-            <Settings className="w-4 h-4 mr-2" />
-            {isEditMode ? "Done Editing" : "Customize Layout"}
-          </Button>
+    <div className="flex gap-4">
+      {isEditMode && (
+        <div className="w-64 bg-card border rounded-lg p-4 h-fit">
+          <h3 className="font-semibold mb-3">Available Widgets</h3>
+
+          <div className="space-y-2">
+            {Object.entries(WIDGET_TYPES).map(([type, info]) => {
+              const existingWidget = widgetConfigs.find(
+                (w) => w.platform === type || (type === "profile" && w.type === "profile"),
+              )
+              const isHidden = existingWidget && !existingWidget.visible
+
+              return (
+                <div key={type} className="flex items-center justify-between p-2 border rounded">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm">{info.icon}</span>
+                    <span className="text-sm font-medium">{info.name}</span>
+                  </div>
+
+                  {existingWidget ? (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleConfigChange(existingWidget.id, { visible: !existingWidget.visible })}
+                      className="h-6 w-6 p-0"
+                    >
+                      {existingWidget.visible ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
+                    </Button>
+                  ) : (
+                    <Button variant="ghost" size="sm" onClick={() => addWidget(type)} className="h-6 w-6 p-0">
+                      <Plus className="w-3 h-3" />
+                    </Button>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      <div className="flex-1 space-y-4">
+        {/* Edit Mode Controls */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Button
+              variant={isEditMode ? "default" : "outline"}
+              size="sm"
+              onClick={() => onEditModeChange(!isEditMode)}
+            >
+              <Settings className="w-4 h-4 mr-2" />
+              {isEditMode ? "Done Editing" : "Customize Layout"}
+            </Button>
+
+            {isEditMode && (
+              <Button variant="outline" size="sm" onClick={resetLayout}>
+                Reset Layout
+              </Button>
+            )}
+          </div>
 
           {isEditMode && (
-            <Button variant="outline" size="sm" onClick={resetLayout}>
-              Reset Layout
-            </Button>
+            <div className="text-sm text-muted-foreground">
+              Drag widgets to reposition • Drag corners to resize • Use panel to show/hide widgets
+            </div>
           )}
         </div>
 
-        {isEditMode && (
-          <div className="text-sm text-muted-foreground">
-            Drag widgets to reposition • Drag corners to resize • Click settings to hide
-          </div>
-        )}
-      </div>
+        {/* Widget Container */}
+        <div
+          className={`relative min-h-[600px] border-2 border-dashed rounded-lg transition-all duration-200 ${
+            isEditMode ? "border-primary bg-primary/5" : "border-transparent"
+          }`}
+        >
+          {widgetConfigs.map((config) => {
+            if (config.type === "profile") {
+              return (
+                <ProfileWidget
+                  key={config.id}
+                  config={config}
+                  onConfigChange={handleConfigChange}
+                  isEditMode={isEditMode}
+                  profileData={profileData}
+                />
+              )
+            } else if (config.type === "service") {
+              if (config.platform === "calendly") {
+                return (
+                  <CalendlyWidget
+                    key={config.id}
+                    config={config}
+                    onConfigChange={handleConfigChange}
+                    isEditMode={isEditMode}
+                  />
+                )
+              } else if (config.platform === "ens") {
+                return (
+                  <ENSWidget
+                    key={config.id}
+                    config={config}
+                    onConfigChange={handleConfigChange}
+                    isEditMode={isEditMode}
+                  />
+                )
+              } else if (config.platform === "cafecito") {
+                return (
+                  <CafecitoWidget
+                    key={config.id}
+                    config={config}
+                    onConfigChange={handleConfigChange}
+                    isEditMode={isEditMode}
+                  />
+                )
+              }
+            } else {
+              const account = accounts.find((a) => a.platform === config.platform)
+              if (!account) return null
 
-      {/* Widget Container */}
-      <div
-        className={`relative min-h-[600px] border-2 border-dashed rounded-lg transition-all duration-200 ${
-          isEditMode ? "border-primary bg-primary/5" : "border-transparent"
-        }`}
-      >
-        {widgetConfigs.map((config) => {
-          if (config.type === "profile") {
-            return (
-              <ProfileWidget
-                key={config.id}
-                config={config}
-                onConfigChange={handleConfigChange}
-                isEditMode={isEditMode}
-                profileData={profileData}
-              />
-            )
-          } else {
-            const account = accounts.find((a) => a.platform === config.platform)
-            if (!account) return null
+              return (
+                <SocialWidget
+                  key={config.id}
+                  account={account}
+                  config={config}
+                  onConfigChange={handleConfigChange}
+                  isEditMode={isEditMode}
+                />
+              )
+            }
+          })}
 
-            return (
-              <SocialWidget
-                key={config.id}
-                account={account}
-                config={config}
-                onConfigChange={handleConfigChange}
-                isEditMode={isEditMode}
-              />
-            )
-          }
-        })}
-
-        {isEditMode && widgetConfigs.filter((c) => c.visible).length === 0 && (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="text-center text-muted-foreground">
-              <p>No visible widgets</p>
-              <p className="text-sm">Use the settings menu to show widgets</p>
+          {isEditMode && widgetConfigs.filter((c) => c.visible).length === 0 && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="text-center text-muted-foreground">
+                <p>No visible widgets</p>
+                <p className="text-sm">Use the widget panel to add widgets</p>
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   )
