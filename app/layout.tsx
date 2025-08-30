@@ -18,8 +18,10 @@ export const metadata: Metadata = {
   description:
     "Centralize your online presence with GetToKnowMe - the modern platform for showcasing your digital identity",
   generator: "v0.app",
-  other: {
-    "tiktok-developers-site-verification": "RuL9QzWGhWGxbFLQ0kG8HMahoXFyDD3A",
+  verification: {
+    other: {
+      "tiktok-developers-site-verification": "RuL9QzWGhWGxbFLQ0kG8HMahoXFyDD3A",
+    },
   },
 }
 
