@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
-import { Github, Instagram, Twitter } from "lucide-react"
+import { Github, Instagram, Twitter, UserX } from "lucide-react"
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState<string | null>(null)
@@ -25,6 +25,21 @@ export default function LoginPage() {
         },
       })
       if (error) throw error
+    } catch (error: unknown) {
+      setError(error instanceof Error ? error.message : "An error occurred")
+      setIsLoading(null)
+    }
+  }
+
+  const handleAnonymousLogin = async () => {
+    const supabase = createClient()
+    setIsLoading("anonymous")
+    setError(null)
+
+    try {
+      const { error } = await supabase.auth.signInAnonymously()
+      if (error) throw error
+      router.push("/dashboard")
     } catch (error: unknown) {
       setError(error instanceof Error ? error.message : "An error occurred")
       setIsLoading(null)
@@ -69,16 +84,23 @@ export default function LoginPage() {
               {isLoading === "google" ? "Connecting..." : "Continue with Instagram"}
             </Button>
 
-            {/* TikTok button (using Google OAuth as placeholder since TikTok OAuth isn't widely supported) */}
-            <Button
-              onClick={() => handleSocialLogin("google")}
-              disabled={isLoading !== null}
-              className="w-full bg-black hover:bg-gray-900 text-white"
-            >
-              <div className="w-5 h-5 mr-2 bg-gradient-to-r from-pink-500 to-red-500 rounded-full flex items-center justify-center text-xs font-bold">
-                T
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t border-gray-200" />
               </div>
-              {isLoading === "google" ? "Connecting..." : "Continue with TikTok"}
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-white px-2 text-gray-500">Or</span>
+              </div>
+            </div>
+
+            <Button
+              onClick={handleAnonymousLogin}
+              disabled={isLoading !== null}
+              variant="outline"
+              className="w-full border-gray-300 hover:bg-gray-50 bg-transparent"
+            >
+              <UserX className="w-5 h-5 mr-2" />
+              {isLoading === "anonymous" ? "Connecting..." : "Continue Anonymously"}
             </Button>
 
             {error && (
