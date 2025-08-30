@@ -6,6 +6,7 @@ import { Share2, LogOut, Edit3, Eye } from "lucide-react"
 import { WidgetGrid } from "@/components/widget-system"
 import { createClient } from "@/lib/supabase/client"
 import { useRouter, useSearchParams } from "next/navigation"
+import { useToast } from "@/hooks/use-toast"
 
 export default function PublicProfilePage({ params }: { params: { username: string } }) {
   const [userData, setUserData] = useState(null)
@@ -17,6 +18,7 @@ export default function PublicProfilePage({ params }: { params: { username: stri
   const [ensIdentity, setEnsIdentity] = useState("")
   const router = useRouter()
   const searchParams = useSearchParams()
+  const { toast } = useToast()
 
   const supabase = useMemo(() => createClient(), [])
 
@@ -257,8 +259,18 @@ export default function PublicProfilePage({ params }: { params: { username: stri
       await supabase.from("profiles").update(updates).eq("id", profileId)
 
       setUserData((prev) => (prev ? { ...prev, ...updates } : null))
+
+      toast({
+        title: "Profile updated",
+        description: "Your changes have been saved successfully.",
+      })
     } catch (error) {
       console.error("Error updating profile:", error)
+      toast({
+        title: "Update failed",
+        description: "There was an error saving your changes. Please try again.",
+        variant: "destructive",
+      })
     }
   }
 
@@ -269,8 +281,18 @@ export default function PublicProfilePage({ params }: { params: { username: stri
 
     try {
       await supabase.from("profiles").update({ ens_identity: ens }).eq("id", profileId)
+
+      toast({
+        title: "ENS identity updated",
+        description: "Your ENS identity has been saved successfully.",
+      })
     } catch (error) {
       console.error("Error updating ENS:", error)
+      toast({
+        title: "ENS update failed",
+        description: "There was an error saving your ENS identity. Please try again.",
+        variant: "destructive",
+      })
     }
   }
 
