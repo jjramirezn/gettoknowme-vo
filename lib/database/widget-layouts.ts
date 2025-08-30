@@ -17,7 +17,27 @@ export interface WidgetLayoutDB {
 
 // Convert database format to widget config format
 export function dbToWidgetConfig(dbLayout: WidgetLayoutDB, platform?: string): WidgetConfig {
-  const [width, height] = dbLayout.size.split("x").map(Number)
+  let width = 2,
+    height = 2 // default medium size
+
+  switch (dbLayout.size) {
+    case "small":
+      width = 1
+      height = 1
+      break
+    case "medium":
+      width = 2
+      height = 2
+      break
+    case "large":
+      width = 3
+      height = 3
+      break
+    case "wide":
+      width = 2
+      height = 1
+      break
+  }
 
   return {
     id: dbLayout.widget_id,
@@ -34,13 +54,27 @@ export function widgetConfigToDb(
   config: WidgetConfig,
   profileId: string,
 ): Omit<WidgetLayoutDB, "id" | "created_at" | "updated_at"> {
+  let size = "medium" // default
+
+  const { width, height } = config.gridSize
+
+  if (width === 1 && height === 1) {
+    size = "small"
+  } else if (width === 2 && height === 2) {
+    size = "medium"
+  } else if (width >= 3 || height >= 3) {
+    size = "large"
+  } else if ((width === 2 && height === 1) || (width === 1 && height === 2)) {
+    size = "wide"
+  }
+
   return {
     profile_id: profileId,
     widget_id: config.id,
     widget_type: config.type,
     position_x: config.gridPosition.x,
     position_y: config.gridPosition.y,
-    size: `${config.gridSize.width}x${config.gridSize.height}`,
+    size: size,
     is_visible: config.visible,
   }
 }

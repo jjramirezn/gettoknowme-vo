@@ -175,9 +175,13 @@ export function WidgetGrid({ accounts, profileData, profileId, isEditMode, onEdi
     loadWidgetConfigs()
   }, [profileId, accounts])
 
+  function generateUUID(): string {
+    return globalThis.crypto.randomUUID()
+  }
+
   function createDefaultWidgetConfigs(accounts: SocialAccount[]): WidgetConfig[] {
     const profileConfig: WidgetConfig = {
-      id: "widget-profile",
+      id: generateUUID(),
       type: "profile" as const,
       gridPosition: { x: 0, y: 0 },
       gridSize: { width: 2, height: 2 },
@@ -185,14 +189,17 @@ export function WidgetGrid({ accounts, profileData, profileId, isEditMode, onEdi
     }
 
     const socialConfigs: WidgetConfig[] = accounts.map((account, index) => ({
-      id: `widget-${account.platform.toLowerCase()}`,
-      type: "social" as const,
+      id: generateUUID(),
+      type:
+        account.platform === "calendly" || account.platform === "ens" || account.platform === "cafecito"
+          ? "service"
+          : "social",
       platform: account.platform,
       gridPosition: {
         x: ((index + 1) % 4) * 2,
         y: Math.floor((index + 1) / 4) * 2 + 2,
       },
-      gridSize: { width: 2, height: 2 },
+      gridSize: { width: account.platform === "cafecito" ? 1 : 2, height: account.platform === "cafecito" ? 1 : 2 },
       visible: true,
     }))
 
@@ -226,7 +233,7 @@ export function WidgetGrid({ accounts, profileData, profileId, isEditMode, onEdi
 
   const addWidget = async (type: string) => {
     const newWidget: WidgetConfig = {
-      id: `widget-${type}-${Date.now()}`,
+      id: generateUUID(),
       type:
         type === "profile"
           ? "profile"
