@@ -268,6 +268,80 @@ function ProfileWidget({ config, onConfigChange, isEditMode, profileData }: Widg
   )
 }
 
+const ENHANCED_MOCK_DATA = {
+  Instagram: {
+    recentPosts: [
+      { image: "/vibrant-coastal-sunset.png", likes: "2.1K", comments: "89", caption: "Golden hour magic ✨" },
+      { image: "/steaming-coffee-cup.png", likes: "1.8K", comments: "67", caption: "Monday motivation ☕" },
+      { image: "/vibrant-cityscape.png", likes: "3.2K", comments: "124", caption: "City lights never get old 🌃" },
+      { image: "/abstract-profile.png", likes: "1.5K", comments: "43", caption: "Behind the scenes 📸" },
+      { image: "/vibrant-coastal-sunset.png", likes: "2.8K", comments: "91", caption: "Weekend vibes 🌊" },
+      { image: "/steaming-coffee-cup.png", likes: "1.9K", comments: "56", caption: "Creative process ⚡" },
+    ],
+    stories: ["Travel", "Food", "Work", "Friends"],
+    highlights: 4,
+    engagement: "4.2%",
+  },
+  Twitter: {
+    recentPosts: [
+      {
+        text: "Just shipped a new feature that I'm really excited about! The future of social media is here 🚀",
+        likes: "847",
+        comments: "23",
+        retweets: "156",
+      },
+      {
+        text: "Hot take: The best content creators are the ones who stay authentic while scaling. Quality > Quantity always.",
+        likes: "1.2K",
+        comments: "89",
+        retweets: "234",
+      },
+      {
+        text: "Building in public has been one of the best decisions for my career. Transparency builds trust 💯",
+        likes: "923",
+        comments: "45",
+        retweets: "178",
+      },
+    ],
+    trending: "#BuildInPublic",
+    impressions: "125K",
+  },
+  YouTube: {
+    recentPosts: [
+      { title: "How I Built My Personal Brand in 6 Months", views: "45K", duration: "12:34", likes: "2.1K" },
+      { title: "The Future of Social Media (My Predictions)", views: "78K", duration: "18:45", likes: "3.8K" },
+      { title: "Day in the Life of a Content Creator", views: "32K", duration: "8:22", likes: "1.9K" },
+    ],
+    subscribers: "127K",
+    totalViews: "2.1M",
+  },
+  GitHub: {
+    recentRepos: [
+      { name: "social-dashboard", stars: "234", language: "TypeScript", description: "Modern social media dashboard" },
+      { name: "content-scheduler", stars: "89", language: "React", description: "AI-powered content scheduling tool" },
+      { name: "analytics-engine", stars: "156", language: "Python", description: "Real-time social analytics" },
+    ],
+    contributions: "1,247",
+    streak: "89 days",
+  },
+  LinkedIn: {
+    recentPosts: [
+      {
+        text: "Excited to share that our team just hit 100K users! Here's what we learned about scaling...",
+        likes: "456",
+        comments: "67",
+      },
+      {
+        text: "The intersection of AI and social media is fascinating. Here are 5 trends I'm watching...",
+        likes: "789",
+        comments: "123",
+      },
+    ],
+    connections: "2.5K+",
+    profile_views: "1.2K",
+  },
+}
+
 function SocialWidget({ account, config, onConfigChange, isEditMode }: WidgetProps) {
   const [isDragging, setIsDragging] = useState(false)
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
@@ -343,6 +417,9 @@ function SocialWidget({ account, config, onConfigChange, isEditMode }: WidgetPro
     onConfigChange(config.id, { visible: !config.visible })
   }
 
+  const mockData = ENHANCED_MOCK_DATA[account.platform as keyof typeof ENHANCED_MOCK_DATA]
+  const enhancedAccount = { ...account, recentPosts: mockData?.recentPosts || account.recentPosts }
+
   if (!config.visible || !account) return null
 
   return (
@@ -374,6 +451,12 @@ function SocialWidget({ account, config, onConfigChange, isEditMode }: WidgetPro
           </div>
 
           <div className="flex items-center gap-1">
+            {!isEditMode && account.platform === "Twitter" && (
+              <Badge variant="secondary" className="text-xs bg-green-100 text-green-700">
+                Trending
+              </Badge>
+            )}
+
             {isEditMode && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -413,31 +496,62 @@ function SocialWidget({ account, config, onConfigChange, isEditMode }: WidgetPro
         {/* Widget Content */}
         <div className="space-y-2">
           {config.size === "small" && (
-            <div className="text-center">
+            <div className="text-center space-y-2">
               <Badge variant="secondary" className="text-xs">
                 {account.handle}
               </Badge>
+              {account.platform === "Instagram" && <div className="text-xs text-muted-foreground">4.2% engagement</div>}
             </div>
           )}
 
           {(config.size === "medium" || config.size === "wide") && account.platform === "Instagram" && (
-            <div className="grid grid-cols-3 gap-1">
-              {account.recentPosts?.slice(0, 3).map((post, index) => (
-                <div key={index} className="aspect-square">
-                  <img
-                    src={post.image || "/placeholder.svg"}
-                    alt="Post"
-                    className="w-full h-full object-cover rounded"
-                  />
-                </div>
-              ))}
+            <div className="space-y-2">
+              <div className="flex gap-1 mb-2">
+                {mockData?.stories?.slice(0, 4).map((story, index) => (
+                  <div key={index} className="w-8 h-8 rounded-full bg-gradient-to-r from-pink-500 to-orange-500 p-0.5">
+                    <div className="w-full h-full rounded-full bg-white flex items-center justify-center text-xs">
+                      {story[0]}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="grid grid-cols-3 gap-1">
+                {enhancedAccount.recentPosts?.slice(0, 3).map((post, index) => (
+                  <div key={index} className="aspect-square relative group cursor-pointer">
+                    <img
+                      src={post.image || "/placeholder.svg"}
+                      alt="Post"
+                      className="w-full h-full object-cover rounded"
+                    />
+                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded flex items-center justify-center">
+                      <div className="flex items-center gap-1 text-white text-xs">
+                        <Heart className="w-3 h-3" />
+                        {post.likes}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 
           {config.size === "large" && account.platform === "Instagram" && (
-            <div className="space-y-2">
+            <div className="space-y-3">
+              <div className="flex gap-2">
+                {mockData?.stories?.map((story, index) => (
+                  <div key={index} className="flex flex-col items-center gap-1">
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-r from-pink-500 to-orange-500 p-0.5">
+                      <div className="w-full h-full rounded-full bg-white flex items-center justify-center text-xs font-medium">
+                        {story[0]}
+                      </div>
+                    </div>
+                    <span className="text-xs text-muted-foreground truncate w-12 text-center">{story}</span>
+                  </div>
+                ))}
+              </div>
+
               <div className="grid grid-cols-3 gap-2">
-                {account.recentPosts?.slice(0, 6).map((post, index) => (
+                {enhancedAccount.recentPosts?.slice(0, 6).map((post, index) => (
                   <div key={index} className="relative group cursor-pointer">
                     <img
                       src={post.image || "/placeholder.svg"}
@@ -445,7 +559,7 @@ function SocialWidget({ account, config, onConfigChange, isEditMode }: WidgetPro
                       className="w-full aspect-square object-cover rounded"
                     />
                     <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded flex items-center justify-center">
-                      <div className="flex items-center gap-2 text-white text-xs">
+                      <div className="flex items-center gap-1 text-white text-xs">
                         <div className="flex items-center gap-1">
                           <Heart className="w-3 h-3" />
                           {post.likes}
@@ -459,17 +573,129 @@ function SocialWidget({ account, config, onConfigChange, isEditMode }: WidgetPro
                   </div>
                 ))}
               </div>
+
+              <div className="flex justify-between text-xs text-muted-foreground pt-2 border-t">
+                <span>4.2% engagement</span>
+                <span>{mockData?.highlights} highlights</span>
+              </div>
             </div>
           )}
 
           {(config.size === "medium" || config.size === "large") && account.platform === "Twitter" && (
             <div className="space-y-2">
-              {account.recentPosts?.slice(0, config.size === "large" ? 3 : 2).map((post, index) => (
-                <div key={index} className="border rounded p-2 text-xs" style={{ backgroundColor: "var(--accent)" }}>
-                  <p className="mb-1">{post.text}</p>
-                  <div className="flex items-center gap-3 opacity-70">
+              {enhancedAccount.recentPosts?.slice(0, config.size === "large" ? 3 : 2).map((post, index) => (
+                <div key={index} className="border rounded-lg p-3 text-xs bg-accent/50">
+                  <p className="mb-2 leading-relaxed">{post.text}</p>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3 opacity-70">
+                      <div className="flex items-center gap-1">
+                        <Heart className="w-3 h-3" />
+                        {post.likes}
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <MessageCircle className="w-3 h-3" />
+                        {post.comments}
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <span>🔄</span>
+                        {post.retweets}
+                      </div>
+                    </div>
+                    {index === 0 && (
+                      <Badge variant="outline" className="text-xs">
+                        Viral
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+              ))}
+
+              {config.size === "large" && (
+                <div className="flex justify-between text-xs text-muted-foreground pt-2 border-t">
+                  <span>125K impressions</span>
+                  <span>Trending: #BuildInPublic</span>
+                </div>
+              )}
+            </div>
+          )}
+
+          {(config.size === "medium" || config.size === "large") && account.platform === "YouTube" && (
+            <div className="space-y-2">
+              {config.size === "large" && (
+                <div className="flex items-center justify-between p-2 bg-red-50 rounded-lg">
+                  <span className="text-xs font-medium">🎉 127K Subscribers!</span>
+                  <Badge variant="secondary" className="bg-red-100 text-red-700 text-xs">
+                    +2.1K this month
+                  </Badge>
+                </div>
+              )}
+
+              {enhancedAccount.recentPosts?.slice(0, config.size === "large" ? 3 : 2).map((post, index) => (
+                <div
+                  key={index}
+                  className="flex items-center gap-3 border rounded-lg p-2 bg-accent/50 hover:bg-accent/70 transition-colors cursor-pointer"
+                >
+                  <div className="relative">
+                    <div className="w-16 h-10 bg-gradient-to-r from-red-500 to-red-600 rounded flex items-center justify-center text-white text-xs font-medium">
+                      ▶
+                    </div>
+                    <div className="absolute bottom-0 right-0 bg-black/80 text-white text-xs px-1 rounded">
+                      {post.duration}
+                    </div>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-medium truncate">{post.title}</p>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <span>{post.views} views</span>
+                      <span>•</span>
+                      <span>{post.likes} likes</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {(config.size === "medium" || config.size === "large") && account.platform === "GitHub" && (
+            <div className="space-y-2">
+              {config.size === "large" && (
+                <div className="flex items-center justify-between p-2 bg-green-50 rounded-lg">
+                  <span className="text-xs font-medium">🔥 89 day streak</span>
+                  <Badge variant="secondary" className="bg-green-100 text-green-700 text-xs">
+                    1,247 contributions
+                  </Badge>
+                </div>
+              )}
+
+              {mockData?.recentRepos?.slice(0, config.size === "large" ? 3 : 2).map((repo, index) => (
+                <div
+                  key={index}
+                  className="border rounded-lg p-2 bg-accent/50 hover:bg-accent/70 transition-colors cursor-pointer"
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs font-medium text-blue-600">📁 {repo.name}</span>
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <span>⭐</span>
+                      <span>{repo.stars}</span>
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground mb-1">{repo.description}</p>
+                  <Badge variant="outline" className="text-xs">
+                    {repo.language}
+                  </Badge>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {(config.size === "medium" || config.size === "large") && account.platform === "LinkedIn" && (
+            <div className="space-y-2">
+              {mockData?.recentPosts?.slice(0, config.size === "large" ? 2 : 1).map((post, index) => (
+                <div key={index} className="border rounded-lg p-3 text-xs bg-blue-50">
+                  <p className="mb-2 leading-relaxed">{post.text}</p>
+                  <div className="flex items-center gap-3 text-muted-foreground">
                     <div className="flex items-center gap-1">
-                      <Heart className="w-3 h-3" />
+                      <span>👍</span>
                       {post.likes}
                     </div>
                     <div className="flex items-center gap-1">
@@ -479,29 +705,13 @@ function SocialWidget({ account, config, onConfigChange, isEditMode }: WidgetPro
                   </div>
                 </div>
               ))}
-            </div>
-          )}
 
-          {(config.size === "medium" || config.size === "large") && account.platform === "YouTube" && (
-            <div className="space-y-2">
-              {account.recentPosts?.slice(0, config.size === "large" ? 3 : 2).map((post, index) => (
-                <div
-                  key={index}
-                  className="flex items-center gap-2 border rounded p-2"
-                  style={{ backgroundColor: "var(--accent)" }}
-                >
-                  <div
-                    className="w-12 h-8 rounded flex items-center justify-center text-xs"
-                    style={{ backgroundColor: "var(--primary)", color: "var(--background)" }}
-                  >
-                    {post.duration}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-medium truncate">{post.title}</p>
-                    <p className="text-xs opacity-70">{post.views} views</p>
-                  </div>
+              {config.size === "large" && (
+                <div className="flex justify-between text-xs text-muted-foreground pt-2 border-t">
+                  <span>2.5K+ connections</span>
+                  <span>1.2K profile views</span>
                 </div>
-              ))}
+              )}
             </div>
           )}
         </div>
