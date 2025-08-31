@@ -964,14 +964,14 @@ export function WidgetGrid({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between mb-8 md:flex-row flex-col gap-4">
-        <div className="flex items-center gap-4 flex-1 md:flex-row flex-col md:text-left text-center">
+      <div className="flex items-start gap-6 mb-8 md:flex-row flex-col">
+        <div className="flex items-center gap-4 md:flex-row flex-col md:text-left text-center">
           <img
             src={profileData.avatar || "/placeholder.svg"}
             alt={profileData.name}
             className="w-20 h-20 rounded-full object-cover"
           />
-          <div className="flex-1">
+          <div className="min-w-0">
             <h1 className="text-xl font-bold">{profileData.name}</h1>
             <p className="text-muted-foreground">@{profileData.username}</p>
             {effectiveEditMode ? (
@@ -988,7 +988,7 @@ export function WidgetGrid({
           </div>
         </div>
 
-        <div className="flex flex-col items-center gap-2 md:items-end">
+        <div className="flex flex-col items-center gap-2 md:items-end md:flex-shrink-0">
           {profileData.ensIdentity || ensIdentity ? (
             effectiveEditMode ? (
               <input
@@ -1101,7 +1101,18 @@ export function WidgetGrid({
                                 {existingWidget.visible ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
                               </Button>
                             ) : (
-                              <Button variant="ghost" size="sm" onClick={() => addWidget(type)} className="h-6 w-6 p-0">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() =>
+                                  setIntegrationDialog({
+                                    isOpen: true,
+                                    widgetType: type,
+                                    url: "",
+                                  })
+                                }
+                                className="h-6 w-6 p-0"
+                              >
                                 <Plus className="w-3 h-3" />
                               </Button>
                             )}
@@ -1140,18 +1151,6 @@ export function WidgetGrid({
                                   size="sm"
                                 />
                               )}
-
-                            {existingWidget && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => editWidget(existingWidget)}
-                                className="h-6 w-6 p-0"
-                                title="Edit integration"
-                              >
-                                <Pencil className="w-3 h-3" />
-                              </Button>
-                            )}
 
                             {existingWidget ? (
                               <Button

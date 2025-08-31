@@ -4,8 +4,8 @@ import type React from "react"
 import { useState, useCallback, useRef, useEffect } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Settings, Eye, GripVertical } from "lucide-react"
+import { ColorPicker } from "@/components/ui/color-picker"
+import { EyeOff, GripVertical } from "lucide-react"
 
 interface WidgetConfig {
   id: string
@@ -300,6 +300,10 @@ export function WidgetBase({
     onConfigChange(config.id, { visible: !config.visible })
   }
 
+  const handleColorChange = (color: string) => {
+    onConfigChange(config.id, { customColor: color })
+  }
+
   if (!config.visible) return null
 
   // Use preview positions/sizes during drag/resize
@@ -361,22 +365,13 @@ export function WidgetBase({
         <CardContent className="p-4 h-full overflow-hidden relative">
           {children}
 
-          {/* Edit mode controls */}
           {isEditMode && (
             <div className="absolute top-2 right-2 flex items-center gap-1">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="h-6 w-6 p-0 bg-background/80">
-                    <Settings className="w-3 h-3" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <DropdownMenuItem onClick={toggleVisibility}>
-                    <Eye className="w-4 h-4 mr-2" />
-                    Hide Widget
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <ColorPicker value={config.customColor || "#ffffff"} onChange={handleColorChange} size="sm" />
+
+              <Button variant="ghost" size="sm" className="h-6 w-6 p-0 bg-background/80" onClick={toggleVisibility}>
+                <EyeOff className="w-3 h-3" />
+              </Button>
 
               <div className="cursor-move bg-background/80 rounded p-1">
                 <GripVertical className="w-3 h-3 text-muted-foreground" />
