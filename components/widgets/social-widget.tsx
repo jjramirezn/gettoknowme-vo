@@ -56,6 +56,11 @@ export function SocialWidget({
       iconColor: customColor || "bg-red-500",
       textColor: "text-red-900",
     },
+    Farcaster: {
+      bgColor: customColor ? `bg-[${customColor}]/20` : "bg-gradient-to-br from-purple-200 to-indigo-300",
+      iconColor: customColor || "bg-purple-600",
+      textColor: "text-purple-900",
+    },
   }
 
   const platformStyle = PLATFORM_STYLES[account.platform as keyof typeof PLATFORM_STYLES] || {
@@ -152,6 +157,31 @@ export function SocialWidget({
         },
       ],
     },
+    Farcaster: {
+      recentCasts: [
+        {
+          text: "Just deployed a new feature on Farcaster! The decentralized social future is here 🟣",
+          likes: "234",
+          recasts: "67",
+          replies: "23",
+          time: "3h",
+        },
+        {
+          text: "Building in public on Farcaster has been incredible. The community here is amazing! ✨",
+          likes: "189",
+          recasts: "45",
+          replies: "18",
+          time: "1d",
+        },
+        {
+          text: "GM Farcaster! Ready to build the future of social 🚀",
+          likes: "156",
+          recasts: "34",
+          replies: "12",
+          time: "2d",
+        },
+      ],
+    },
   }
 
   const mockData = ENHANCED_MOCK_DATA[account.platform as keyof typeof ENHANCED_MOCK_DATA]
@@ -175,6 +205,7 @@ export function SocialWidget({
           {account.platform === "GitHub" && <span className="text-white">💻</span>}
           {account.platform === "TikTok" && "🎵"}
           {account.platform === "YouTube" && "📺"}
+          {account.platform === "Farcaster" && "🟣"}
         </div>
         <div>
           <h3 className={`font-semibold text-sm ${platformStyle.textColor}`}>
@@ -186,7 +217,9 @@ export function SocialWidget({
                   ? "tiktok.com/gettoknowme"
                   : account.platform === "YouTube"
                     ? "YouTube.com/gettoknowme"
-                    : account.platform}
+                    : account.platform === "Farcaster"
+                      ? "warpcast.com/gettoknowme"
+                      : account.platform}
           </h3>
         </div>
       </div>
@@ -331,6 +364,39 @@ export function SocialWidget({
                     {video.title}
                   </h4>
                   <p className="text-xs text-gray-600 mt-1">{video.views} views</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {account.platform === "Farcaster" && (
+          <div className="space-y-2">
+            {mockData?.recentCasts?.slice(0, gridHeight > 2 ? 3 : 2).map((cast, index) => (
+              <div key={index} className="bg-purple-900 rounded-lg p-3 text-white text-xs">
+                <div className="flex items-start gap-2 mb-2">
+                  <div className="w-6 h-6 bg-purple-500 rounded-full flex-shrink-0 flex items-center justify-center">
+                    <span className="text-xs">🟣</span>
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-1 mb-1">
+                      <span className="font-semibold">@gettoknowme</span>
+                      <span className="text-purple-300">·</span>
+                      <span className="text-purple-300">{cast.time}</span>
+                    </div>
+                    <p className="leading-relaxed">{cast.text}</p>
+                    <div className="flex items-center gap-4 mt-2 text-purple-300">
+                      <span className="flex items-center gap-1">
+                        <span>💬</span> {cast.replies}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <span>🔄</span> {cast.recasts}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <span>❤️</span> {cast.likes}
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </div>
             ))}

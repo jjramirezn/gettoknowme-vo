@@ -317,17 +317,20 @@ export default function PublicProfilePage({ params }: { params: { username: stri
     }
   }
 
-  const handleBioChange = useCallback((newBio: string) => {
-    setBioInput(newBio)
+  const handleBioChange = useCallback(
+    (newBio: string) => {
+      setBioInput(newBio)
 
-    if (bioTimeoutRef.current) {
-      clearTimeout(bioTimeoutRef.current)
-    }
+      if (bioTimeoutRef.current) {
+        clearTimeout(bioTimeoutRef.current)
+      }
 
-    bioTimeoutRef.current = setTimeout(() => {
-      handleProfileUpdate({ bio: newBio })
-    }, 500) // 500ms debounce instead of 1 second
-  }, [])
+      bioTimeoutRef.current = setTimeout(() => {
+        handleProfileUpdate({ bio: newBio })
+      }, 500) // 500ms debounce instead of 1 second
+    },
+    [profileId, isOwnProfile],
+  ) // Removed handleProfileUpdate from dependency array
 
   const handleEnsUpdate = useCallback(
     async (ens: string) => {

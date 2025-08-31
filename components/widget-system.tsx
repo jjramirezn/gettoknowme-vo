@@ -16,7 +16,8 @@ const WIDGET_TYPES = {
   twitter: { name: "Twitter", icon: "🐦" },
   youtube: { name: "YouTube", icon: "📺" },
   github: { name: "GitHub", icon: "💻" },
-  linkedin: { name: "LinkedIn", icon: "💼" },
+  tiktok: { name: "TikTok", icon: "🎵" },
+  farcaster: { name: "Farcaster", icon: "🟣" },
   calendly: { name: "Calendly", icon: "📅" },
   cafecito: { name: "Cafecito", icon: "☕" },
 }
@@ -26,7 +27,8 @@ const WIDGET_COLORS = {
   twitter: ["#1DA1F2", "#14171A", "#657786", "#AAB8C2"],
   youtube: ["#FF0000", "#282828", "#FFFFFF", "#FF4444"],
   github: ["#333333", "#24292E", "#F6F8FA", "#0366D6"],
-  linkedin: ["#0077B5", "#00A2DC", "#313335", "#86888A"],
+  tiktok: ["#000000", "#FF0050", "#25F4EE", "#FE2C55"],
+  farcaster: ["#8A63D2", "#472A91", "#9A73E4", "#6B46C1"],
   calendly: ["#006BFF", "#00A2FF", "#0080FF", "#4A90E2"],
   cafecito: ["#FF6B35", "#F7931E", "#FFB74D", "#FF8A65"],
 }
@@ -298,13 +300,21 @@ export function WidgetGrid({
         color: "#333333",
         url: `https://github.com/yourhandle`,
       },
-      linkedin: {
-        platform: "LinkedIn",
-        handle: "Your Name",
-        followers: "1.2K connections",
-        icon: "💼",
-        color: "#0077B5",
-        url: `https://linkedin.com/in/yourhandle`,
+      tiktok: {
+        platform: "TikTok",
+        handle: "@yourhandle",
+        followers: "45.2K followers",
+        icon: "🎵",
+        color: "#000000",
+        url: `https://tiktok.com/@yourhandle`,
+      },
+      farcaster: {
+        platform: "Farcaster",
+        handle: "@yourhandle",
+        followers: "1.8K followers",
+        icon: "🟣",
+        color: "#8A63D2",
+        url: `https://warpcast.com/yourhandle`,
       },
     }
 
@@ -369,14 +379,28 @@ export function WidgetGrid({
               ) : (
                 <div>
                   {ensIdentity ? (
-                    <a
-                      href={`https://peanut.me/${ensIdentity}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="font-bold text-lg hover:underline transition-all duration-200 hover:text-blue-100"
-                    >
-                      {ensIdentity}
-                    </a>
+                    <div>
+                      <a
+                        href={`https://peanut.me/${ensIdentity}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-bold text-lg hover:underline transition-all duration-200 hover:text-blue-100"
+                      >
+                        {ensIdentity}
+                      </a>
+                      <div className="flex items-center justify-center gap-3 mt-2">
+                        <p className="text-xs text-blue-100 opacity-90">💰 Send tips</p>
+                        <span className="text-blue-100 opacity-50">•</span>
+                        <a
+                          href={`https://app.ens.domains/${ensIdentity}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-blue-100 opacity-90 hover:opacity-100 transition-opacity"
+                        >
+                          🌐 Manage ENS
+                        </a>
+                      </div>
+                    </div>
                   ) : (
                     <h3 className="font-bold text-lg">ENS.ETH</h3>
                   )}
