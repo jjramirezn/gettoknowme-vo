@@ -101,13 +101,7 @@ function CafecitoWidget({
   allWidgets?: WidgetConfig[]
 }) {
   return (
-    <WidgetBase
-      config={config}
-      onConfigChange={onConfigChange}
-      isEditMode={isEditMode}
-      className="!w-[250px] !h-[80px]"
-      allWidgets={allWidgets}
-    >
+    <WidgetBase config={config} onConfigChange={onConfigChange} isEditMode={isEditMode} allWidgets={allWidgets}>
       <div className="flex items-center justify-between h-full">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center text-white text-sm">☕</div>
