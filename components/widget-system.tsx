@@ -101,7 +101,14 @@ function CafecitoWidget({
   allWidgets?: WidgetConfig[]
 }) {
   return (
-    <WidgetBase config={config} onConfigChange={onConfigChange} isEditMode={isEditMode} allWidgets={allWidgets}>
+    <WidgetBase
+      config={config}
+      onConfigChange={onConfigChange}
+      isEditMode={isEditMode}
+      allWidgets={allWidgets}
+      minSize={{ width: 1, height: 1 }}
+      maxSize={{ width: 2, height: 1 }}
+    >
       <div className="flex items-center justify-between h-full">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center text-white text-sm">☕</div>
@@ -184,7 +191,7 @@ export function WidgetGrid({
         x: (index % 4) * 2,
         y: Math.floor(index / 4) * 2,
       },
-      gridSize: { width: account.platform === "cafecito" ? 1 : 2, height: account.platform === "cafecito" ? 1 : 2 },
+      gridSize: { width: account.platform === "cafecito" ? 2 : 2, height: account.platform === "cafecito" ? 1 : 2 },
       visible: true,
     }))
 
@@ -243,7 +250,7 @@ export function WidgetGrid({
       type: type === "profile" ? "profile" : type === "calendly" || type === "cafecito" ? "service" : "social",
       platform: type,
       gridPosition: { x: 0, y: 0 },
-      gridSize: { width: type === "cafecito" ? 1 : 2, height: type === "cafecito" ? 1 : 2 },
+      gridSize: { width: type === "cafecito" ? 2 : 2, height: type === "cafecito" ? 1 : 2 },
       visible: true,
     }
 

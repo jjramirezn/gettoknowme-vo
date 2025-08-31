@@ -10,6 +10,8 @@ export interface WidgetLayoutDB {
   platform?: string
   position_x: number
   position_y: number
+  width?: number
+  height?: number
   size: string
   is_visible: boolean
   created_at: string
@@ -19,34 +21,12 @@ export interface WidgetLayoutDB {
 
 // Convert database format to widget config format
 export function dbToWidgetConfig(dbLayout: WidgetLayoutDB): WidgetConfig {
-  let width = 2,
-    height = 2 // default medium size
-
-  switch (dbLayout.size) {
-    case "small":
-      width = 1
-      height = 1
-      break
-    case "medium":
-      width = 2
-      height = 2
-      break
-    case "large":
-      width = 3
-      height = 3
-      break
-    case "wide":
-      width = 2
-      height = 1
-      break
-  }
-
   return {
     id: dbLayout.widget_id,
     type: dbLayout.widget_type as "profile" | "social" | "service",
     platform: dbLayout.platform || dbLayout.widget_type,
     gridPosition: { x: dbLayout.position_x, y: dbLayout.position_y },
-    gridSize: { width, height },
+    gridSize: { width: dbLayout.width || 2, height: dbLayout.height || 2 }, // Use actual dimensions from DB
     visible: dbLayout.is_visible,
     customColor: dbLayout.custom_color,
   }
@@ -57,20 +37,6 @@ export function widgetConfigToDb(
   config: WidgetConfig,
   profileId: string,
 ): Omit<WidgetLayoutDB, "id" | "created_at" | "updated_at"> {
-  let size = "medium" // default
-
-  const { width, height } = config.gridSize
-
-  if (width === 1 && height === 1) {
-    size = "small"
-  } else if (width === 2 && height === 2) {
-    size = "medium"
-  } else if (width >= 3 || height >= 3) {
-    size = "large"
-  } else if ((width === 2 && height === 1) || (width === 1 && height === 2)) {
-    size = "wide"
-  }
-
   return {
     profile_id: profileId,
     widget_id: config.id,
@@ -78,7 +44,9 @@ export function widgetConfigToDb(
     platform: config.platform,
     position_x: config.gridPosition.x,
     position_y: config.gridPosition.y,
-    size: size,
+    width: config.gridSize.width, // Store actual width
+    height: config.gridSize.height, // Store actual height
+    size: "custom", // Keep for backward compatibility but not used
     is_visible: config.visible,
     custom_color: config.customColor,
   }
