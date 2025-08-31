@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback, useMemo } from "react"
+import { useState, useEffect, useCallback, useMemo, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Share2, LogOut, Edit3, Eye } from "lucide-react"
 import { WidgetGrid } from "@/components/widget-system"
@@ -27,6 +27,11 @@ export default function PublicProfilePage({ params }: { params: { username: stri
   const [isEditMode, setIsEditMode] = useState(searchParams.get("edit") === "true")
 
   const editFromParams = useMemo(() => searchParams.get("edit") === "true", [searchParams])
+
+  const [bioInput, setBioInput] = useState("")
+  const [ensInput, setEnsInput] = useState("")
+  const bioTimeoutRef = useRef<NodeJS.Timeout>()
+  const ensTimeoutRef = useRef<NodeJS.Timeout>()
 
   const loadProfileData = useCallback(async () => {
     setIsLoading(true)
@@ -94,6 +99,8 @@ export default function PublicProfilePage({ params }: { params: { username: stri
             setProfileId(profile.id)
             profileData = profile
             setEnsIdentity(profile.ens_identity || "")
+            setEnsInput(profile.ens_identity || "")
+            setBioInput(profile.bio || "Welcome to my profile!")
             setBackgroundColor(profile.background_color || "#f8fafc")
           }
         }
@@ -138,6 +145,8 @@ export default function PublicProfilePage({ params }: { params: { username: stri
             setProfileId(profile.id)
             profileData = profile
             setEnsIdentity(profile.ens_identity || "")
+            setEnsInput(profile.ens_identity || "")
+            setBioInput(profile.bio || "No bio available")
             setBackgroundColor(profile.background_color || "#f8fafc")
             console.log("[v0] Using public profile:", profile.id)
           } else if (profile) {
@@ -308,27 +317,49 @@ export default function PublicProfilePage({ params }: { params: { username: stri
     }
   }
 
-  const handleEnsUpdate = async (ens: string) => {
-    if (!profileId || !isOwnProfile) return
+  const handleBioChange = useCallback((newBio: string) => {
+    setBioInput(newBio)
 
-    setEnsIdentity(ens)
-
-    try {
-      await supabase.from("profiles").update({ ens_identity: ens }).eq("id", profileId)
-
-      toast({
-        title: "ENS identity updated",
-        description: "Your ENS identity has been saved successfully.",
-      })
-    } catch (error) {
-      console.error("Error updating ENS:", error)
-      toast({
-        title: "ENS update failed",
-        description: "There was an error saving your ENS identity. Please try again.",
-        variant: "destructive",
-      })
+    if (bioTimeoutRef.current) {
+      clearTimeout(bioTimeoutRef.current)
     }
-  }
+
+    bioTimeoutRef.current = setTimeout(() => {
+      handleProfileUpdate({ bio: newBio })
+    }, 1000) // 1 second debounce
+  }, [])
+
+  const handleEnsUpdate = useCallback(
+    async (ens: string) => {
+      if (!profileId || !isOwnProfile) return
+
+      setEnsInput(ens)
+      setEnsIdentity(ens)
+
+      if (ensTimeoutRef.current) {
+        clearTimeout(ensTimeoutRef.current)
+      }
+
+      ensTimeoutRef.current = setTimeout(async () => {
+        try {
+          await supabase.from("profiles").update({ ens_identity: ens }).eq("id", profileId)
+
+          toast({
+            title: "ENS identity updated",
+            description: "Your ENS identity has been saved successfully.",
+          })
+        } catch (error) {
+          console.error("Error updating ENS:", error)
+          toast({
+            title: "ENS update failed",
+            description: "There was an error saving your ENS identity. Please try again.",
+            variant: "destructive",
+          })
+        }
+      }, 1000) // 1 second debounce
+    },
+    [profileId, isOwnProfile, supabase, toast],
+  )
 
   const handleBackgroundColorChange = async (color: string) => {
     if (!profileId || !isOwnProfile) return
@@ -356,14 +387,14 @@ export default function PublicProfilePage({ params }: { params: { username: stri
     () => ({
       name: userData?.displayName,
       username: userData?.username,
-      bio: userData?.bio,
+      bio: isEditMode && isOwnProfile ? bioInput : userData?.bio,
       avatar: userData?.profileImage,
       location: userData?.location,
       joinDate: userData?.joinDate,
       followers: userData?.followers,
       following: userData?.following,
     }),
-    [userData],
+    [userData, bioInput, isEditMode, isOwnProfile],
   )
 
   if (isLoading) {
@@ -391,7 +422,7 @@ export default function PublicProfilePage({ params }: { params: { username: stri
   }
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor }}>
+    <div className="min-h-screen flex flex-col" style={{ backgroundColor }}>
       {isOwnProfile && (
         <header className="border-b border-border/50 backdrop-blur-sm sticky top-0 z-50 bg-background/80">
           <div className="container mx-auto px-4 py-4 flex items-center justify-between">
@@ -425,7 +456,7 @@ export default function PublicProfilePage({ params }: { params: { username: stri
         </header>
       )}
 
-      <div className="container mx-auto px-4 py-8 max-w-6xl">
+      <div className="container mx-auto px-4 py-8 max-w-6xl flex-1">
         <WidgetGrid
           accounts={socialAccounts}
           profileData={profileData}
@@ -433,18 +464,24 @@ export default function PublicProfilePage({ params }: { params: { username: stri
           isEditMode={isEditMode && isOwnProfile}
           onEditModeChange={setIsEditMode}
           onProfileUpdate={handleProfileUpdate}
-          ensIdentity={ensIdentity}
+          ensIdentity={ensInput} // Use ensInput for real-time updates
           onEnsUpdate={handleEnsUpdate}
+          onBioChange={handleBioChange} // Pass bio change handler
         />
+      </div>
 
-        {!isOwnProfile && (
-          <div className="text-center mt-12 pt-8 border-t border-border/50">
+      {!isOwnProfile && (
+        <footer className="mt-auto py-6 border-t border-border/20">
+          <div className="container mx-auto px-4 text-center">
             <p className="text-sm text-muted-foreground">
-              Powered by <span className="font-semibold text-foreground">GetToKnowMe</span> • Create your own profile
+              Powered by <span className="font-semibold text-foreground">GetToKnowMe</span> •
+              <a href="/" className="ml-1 text-primary hover:underline">
+                Create yours
+              </a>
             </p>
           </div>
-        )}
-      </div>
+        </footer>
+      )}
     </div>
   )
 }

@@ -136,6 +136,7 @@ interface WidgetGridProps {
   onProfileUpdate?: (updates: Partial<ProfileData>) => void
   ensIdentity?: string
   onEnsUpdate?: (ens: string) => void
+  onBioChange?: (bio: string) => void // Added onBioChange prop for debounced bio updates
 }
 
 export function WidgetGrid({
@@ -147,6 +148,7 @@ export function WidgetGrid({
   onProfileUpdate,
   ensIdentity,
   onEnsUpdate,
+  onBioChange, // Added onBioChange prop
 }: WidgetGridProps) {
   const [widgetConfigs, setWidgetConfigs] = useState<WidgetConfig[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -340,7 +342,7 @@ export function WidgetGrid({
             {isEditMode ? (
               <textarea
                 value={profileData.bio}
-                onChange={(e) => onProfileUpdate?.({ bio: e.target.value })}
+                onChange={(e) => onBioChange?.(e.target.value)} // Use onBioChange instead of onProfileUpdate for debounced updates
                 placeholder="Write your bio..."
                 className="text-sm text-muted-foreground mt-1 max-w-md w-full resize-none border rounded p-2 min-h-[60px]"
               />

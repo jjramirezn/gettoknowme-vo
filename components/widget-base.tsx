@@ -345,15 +345,15 @@ export function WidgetBase({
 
       <Card
         ref={widgetRef}
-        className={`absolute border-2 transition-all duration-100 ${
+        className={`absolute transition-all duration-100 ${
           isDragging ? "shadow-2xl scale-[1.02] z-50" : "hover:shadow-lg"
-        } ${isEditMode ? "cursor-move" : ""} bg-card border-border ${isResizing ? "z-30" : ""} ${className}`}
+        } ${isEditMode ? "cursor-move" : ""} bg-card ${isResizing ? "z-30" : ""} ${className}`}
         style={{
           left: currentPosition.x,
           top: currentPosition.y,
           width: currentSize.width,
           height: currentSize.height,
-          backgroundColor: config.customColor || "transparent", // Added custom color styling
+          backgroundColor: config.customColor || "transparent",
         }}
         onMouseDown={handleMouseDown}
       >
