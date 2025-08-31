@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Eye, EyeOff, Plus, Calendar } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import { ColorPicker } from "@/components/ui/color-picker"
 
 import { WidgetBase, type WidgetConfig } from "@/components/widget-base"
 import { SocialWidget } from "@/components/widgets/social-widget"
@@ -392,16 +393,14 @@ export function WidgetGrid({
                           {existingWidget &&
                             existingWidget.visible &&
                             WIDGET_COLORS[type as keyof typeof WIDGET_COLORS] && (
-                              <div className="flex gap-1">
-                                {WIDGET_COLORS[type as keyof typeof WIDGET_COLORS].map((color) => (
-                                  <button
-                                    key={color}
-                                    className="w-4 h-4 rounded-full border border-gray-300 hover:scale-110 transition-transform"
-                                    style={{ backgroundColor: color }}
-                                    onClick={() => handleColorChange(existingWidget.id, color)}
-                                  />
-                                ))}
-                              </div>
+                              <ColorPicker
+                                value={
+                                  existingWidget.customColor || WIDGET_COLORS[type as keyof typeof WIDGET_COLORS][0]
+                                }
+                                onChange={(color) => handleColorChange(existingWidget.id, color)}
+                                presetColors={WIDGET_COLORS[type as keyof typeof WIDGET_COLORS]}
+                                size="sm"
+                              />
                             )}
 
                           {existingWidget ? (

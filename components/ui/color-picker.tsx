@@ -9,6 +9,8 @@ interface ColorPickerProps {
   value: string
   onChange: (color: string) => void
   className?: string
+  size?: "sm" | "default"
+  presetColors?: string[]
 }
 
 const PRESET_COLORS = [
@@ -29,8 +31,57 @@ const PRESET_COLORS = [
   "#fff1f2", // rose-50
 ]
 
-export function ColorPicker({ value, onChange, className }: ColorPickerProps) {
+export function ColorPicker({
+  value,
+  onChange,
+  className,
+  size = "default",
+  presetColors = PRESET_COLORS,
+}: ColorPickerProps) {
   const [isOpen, setIsOpen] = useState(false)
+
+  if (size === "sm") {
+    return (
+      <Popover open={isOpen} onOpenChange={setIsOpen}>
+        <PopoverTrigger asChild>
+          <button
+            className={`w-5 h-5 rounded-full border-2 border-gray-300 hover:scale-110 transition-transform ${className}`}
+            style={{ backgroundColor: value }}
+            title="Change color"
+          />
+        </PopoverTrigger>
+        <PopoverContent className="w-48 p-3" align="start">
+          <div className="space-y-2">
+            <h4 className="font-medium text-xs">Widget color</h4>
+            <div className="grid grid-cols-4 gap-1">
+              {presetColors.map((color) => (
+                <button
+                  key={color}
+                  className={`w-6 h-6 rounded border transition-all hover:scale-110 ${
+                    value === color ? "border-primary ring-1 ring-primary/20" : "border-border"
+                  }`}
+                  style={{ backgroundColor: color }}
+                  onClick={() => {
+                    onChange(color)
+                    setIsOpen(false)
+                  }}
+                  title={color}
+                />
+              ))}
+            </div>
+            <div className="pt-1 border-t">
+              <input
+                type="color"
+                value={value}
+                onChange={(e) => onChange(e.target.value)}
+                className="w-full h-6 rounded border border-border cursor-pointer"
+              />
+            </div>
+          </div>
+        </PopoverContent>
+      </Popover>
+    )
+  }
 
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
@@ -45,7 +96,7 @@ export function ColorPicker({ value, onChange, className }: ColorPickerProps) {
         <div className="space-y-3">
           <h4 className="font-medium text-sm">Choose background color</h4>
           <div className="grid grid-cols-5 gap-2">
-            {PRESET_COLORS.map((color) => (
+            {presetColors.map((color) => (
               <button
                 key={color}
                 className={`w-8 h-8 rounded-lg border-2 transition-all hover:scale-110 ${
