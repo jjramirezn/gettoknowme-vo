@@ -380,15 +380,15 @@ function MediumWidget({
             <div className="text-xs text-muted-foreground">Loading articles...</div>
           </div>
         ) : mediumData && mediumData.articles.length > 0 ? (
-          <div className="space-y-3 overflow-hidden">
-            <div className="text-center">
+          <div className="space-y-3 overflow-hidden h-full flex flex-col">
+            <div className="text-center flex-shrink-0">
               <div className="text-lg font-bold text-green-600">{mediumData.articles.length}</div>
               <div className="text-xs text-muted-foreground">articles published</div>
             </div>
 
-            <div className="space-y-2 max-h-32 overflow-y-auto">
-              {mediumData.articles.slice(0, 3).map((article, index) => (
-                <div key={index} className="border-l-2 border-green-500 pl-2">
+            <div className="space-y-2 flex-1 min-h-0 overflow-y-auto">
+              {mediumData.articles.slice(0, Math.min(5, mediumData.articles.length)).map((article, index) => (
+                <div key={index} className="border-l-2 border-green-500 pl-2 flex-shrink-0">
                   <h4 className="text-xs font-medium line-clamp-2 leading-tight">{article.title}</h4>
                   <div className="flex items-center gap-2 mt-1">
                     <span className="text-xs text-muted-foreground">{formatDate(article.pubDate)}</span>
