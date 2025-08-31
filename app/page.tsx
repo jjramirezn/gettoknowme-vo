@@ -92,10 +92,12 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#9C8FB7]/20 via-[#9C8FB7]/10 to-[#9C8FB7]/30 flex items-center justify-center px-4 lg:px-8">
       <div className="max-w-7xl mx-auto w-full">
-        <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
-          <div className="flex justify-center lg:justify-end">
-            <div className="w-80 h-80 bg-gradient-to-br from-[#9C8FB7] to-[#9C8FB7]/80 rounded-3xl flex items-center justify-center shadow-2xl transform hover:scale-105 transition-transform duration-300">
-              <span className="text-8xl font-black text-secondary drop-shadow-lg">ME</span>
+        <div className="grid lg:grid-cols-2 items-center lg:gap-[81px]">
+          <div className="flex justify-center lg:justify-end w-min">
+            <div className="w-80 h-80 bg-gradient-to-br from-[#9C8FB7] to-[#9C8FB7]/80 rounded-3xl flex items-center justify-center shadow-2xl transform hover:scale-105 transition-transform duration-300 mx-14">
+              <span className="text-8xl font-black drop-shadow-lg" style={{ color: "#FFD54A" }}>
+                ME
+              </span>
             </div>
           </div>
 
