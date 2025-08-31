@@ -23,7 +23,6 @@ import { getWidgetLayouts, saveWidgetLayout } from "@/lib/database/widget-layout
 const PREVIEW_WIDGETS = {
   instagram: { name: "Instagram", icon: "📷" },
   twitter: { name: "Twitter", icon: "🐦" },
-  youtube: { name: "YouTube", icon: "📺" },
   tiktok: { name: "TikTok", icon: "🎵" },
   farcaster: { name: "Farcaster", icon: "🟣" },
 }
@@ -32,6 +31,8 @@ const INTEGRATED_WIDGETS = {
   calendly: { name: "Calendly", icon: "📅", placeholder: "https://calendly.com/yourname" },
   cafecito: { name: "Cafecito", icon: "☕", placeholder: "https://cafecito.app/yourname" },
   github: { name: "GitHub", icon: "💻", placeholder: "https://github.com/username or just username" },
+  medium: { name: "Medium", icon: "📝", placeholder: "https://medium.com/@username or just username" },
+  youtube: { name: "YouTube", icon: "📺", placeholder: "https://youtube.com/@channelname or just channelname" },
 }
 
 const WIDGET_TYPES = {
@@ -49,6 +50,7 @@ const WIDGET_COLORS = {
   farcaster: ["#8A63D2", "#472A91", "#9A73E4", "#6B46C1"],
   calendly: ["#006BFF", "#00A2FF", "#0080FF", "#4A90E2"],
   cafecito: ["#FF6B35", "#F7931E", "#FFB74D", "#FF8A65"],
+  medium: ["#00AB6C", "#1A8917", "#03A87C", "#00D084"],
 }
 
 interface SocialAccount {
@@ -289,8 +291,240 @@ function GitHubWidget({
   )
 }
 
+function MediumWidget({
+  config,
+  onConfigChange,
+  isEditMode,
+  allWidgets,
+}: {
+  config: WidgetConfig
+  onConfigChange: (id: string, newConfig: Partial<WidgetConfig>) => void
+  isEditMode: boolean
+  allWidgets?: WidgetConfig[]
+}) {
+  const [mediumData, setMediumData] = useState<{
+    title: string
+    description: string
+    articles: Array<{
+      title: string
+      link: string
+      pubDate: string
+      creator: string
+      categories: string[]
+    }>
+  } | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [username, setUsername] = useState("")
+
+  useEffect(() => {
+    if (config.integrationUrl) {
+      fetchMediumData(config.integrationUrl)
+    }
+  }, [config.integrationUrl])
+
+  const extractUsername = (input: string): string => {
+    // Extract username from Medium URL or return as-is if it's just a username
+    const mediumUrlRegex = /(?:https?:\/\/)?(?:www\.)?medium\.com\/@([^/?#]+)/
+    const match = input.match(mediumUrlRegex)
+    return match ? match[1] : input.replace("@", "").trim()
+  }
+
+  const fetchMediumData = async (input: string) => {
+    const extractedUsername = extractUsername(input)
+    setUsername(extractedUsername)
+    setLoading(true)
+
+    try {
+      const response = await fetch(`/api/medium-articles?username=${extractedUsername}`)
+      if (response.ok) {
+        const data = await response.json()
+        setMediumData(data)
+      } else {
+        console.error("Failed to fetch Medium data")
+      }
+    } catch (error) {
+      console.error("Error fetching Medium data:", error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleClick = () => {
+    if (username) {
+      window.open(`https://medium.com/@${username}`, "_blank")
+    }
+  }
+
+  const formatDate = (dateString: string): string => {
+    const date = new Date(dateString)
+    return date.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    })
+  }
+
+  return (
+    <WidgetBase config={config} onConfigChange={onConfigChange} isEditMode={isEditMode} allWidgets={allWidgets}>
+      <div className={`h-full ${!isEditMode ? "cursor-pointer" : ""}`} onClick={!isEditMode ? handleClick : undefined}>
+        <div className="flex items-center gap-2 mb-3">
+          <div className="w-8 h-8 bg-green-600 rounded-lg flex items-center justify-center text-white text-sm">📝</div>
+          <div>
+            <h3 className="font-semibold text-sm">Medium</h3>
+            <p className="text-xs text-muted-foreground">{username ? `@${username}` : "Connect your Medium"}</p>
+          </div>
+        </div>
+
+        {loading ? (
+          <div className="flex items-center justify-center h-20">
+            <div className="text-xs text-muted-foreground">Loading articles...</div>
+          </div>
+        ) : mediumData && mediumData.articles.length > 0 ? (
+          <div className="space-y-3 overflow-hidden">
+            <div className="text-center">
+              <div className="text-lg font-bold text-green-600">{mediumData.articles.length}</div>
+              <div className="text-xs text-muted-foreground">articles published</div>
+            </div>
+
+            <div className="space-y-2 max-h-32 overflow-y-auto">
+              {mediumData.articles.slice(0, 3).map((article, index) => (
+                <div key={index} className="border-l-2 border-green-500 pl-2">
+                  <h4 className="text-xs font-medium line-clamp-2 leading-tight">{article.title}</h4>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-xs text-muted-foreground">{formatDate(article.pubDate)}</span>
+                    {article.categories.length > 0 && (
+                      <>
+                        <span className="text-xs text-muted-foreground">•</span>
+                        <span className="text-xs text-green-600 font-medium">{article.categories[0]}</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center justify-center h-20">
+            <div className="text-center">
+              <div className="text-xs text-muted-foreground">Connect your Medium</div>
+              <div className="text-xs text-muted-foreground">to see articles</div>
+            </div>
+          </div>
+        )}
+      </div>
+    </WidgetBase>
+  )
+}
+
+const YouTubeWidget = ({ config, onConfigChange, isEditMode, allWidgets }: any) => {
+  const [videos, setVideos] = useState<any[]>([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const extractChannelName = (input: string): string => {
+    // Handle various YouTube URL formats
+    const patterns = [
+      /youtube\.com\/@([^/?]+)/,
+      /youtube\.com\/c\/([^/?]+)/,
+      /youtube\.com\/channel\/([^/?]+)/,
+      /youtube\.com\/user\/([^/?]+)/,
+    ]
+
+    for (const pattern of patterns) {
+      const match = input.match(pattern)
+      if (match) return match[1]
+    }
+
+    // If no URL pattern matches, assume it's a plain channel name
+    return input.replace("@", "")
+  }
+
+  useEffect(() => {
+    if (!config.integrationUrl) return
+
+    const fetchVideos = async () => {
+      setLoading(true)
+      setError(null)
+
+      try {
+        const channelName = extractChannelName(config.integrationUrl)
+        const response = await fetch(`/api/youtube-videos?channel=${encodeURIComponent(channelName)}`)
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch videos")
+        }
+
+        const data = await response.json()
+        setVideos(data.videos || [])
+      } catch (err) {
+        setError("Failed to load videos")
+        console.error("YouTube fetch error:", err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchVideos()
+  }, [config.integrationUrl])
+
+  const handleClick = () => {
+    if (config.integrationUrl) {
+      const channelName = extractChannelName(config.integrationUrl)
+      window.open(`https://youtube.com/@${channelName}`, "_blank")
+    }
+  }
+
+  return (
+    <WidgetBase config={config} onConfigChange={onConfigChange} isEditMode={isEditMode} allWidgets={allWidgets}>
+      <div className="h-full cursor-pointer hover:opacity-90 transition-opacity" onClick={handleClick}>
+        <div className="flex items-center gap-2 mb-3">
+          <div className="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
+            ▶
+          </div>
+          <div>
+            <div className="font-semibold text-sm">YouTube</div>
+            {videos.length > 0 && <div className="text-xs text-gray-600">{videos.length} recent videos</div>}
+          </div>
+        </div>
+
+        {loading && (
+          <div className="flex items-center justify-center h-20">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-red-500"></div>
+          </div>
+        )}
+
+        {error && <div className="text-red-500 text-xs text-center py-4">{error}</div>}
+
+        {!loading && !error && videos.length > 0 && (
+          <div className="space-y-2">
+            {videos.slice(0, 3).map((video, index) => (
+              <div key={index} className="flex gap-2 p-2 rounded-lg hover:bg-gray-50 transition-colors">
+                <div className="w-16 h-12 bg-gray-200 rounded flex-shrink-0 flex items-center justify-center">
+                  <span className="text-red-500 text-xs">▶</span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="font-medium text-xs leading-tight line-clamp-2">{video.title}</div>
+                  <div className="text-xs text-gray-500 mt-1">{new Date(video.publishedAt).toLocaleDateString()}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {!loading && !error && videos.length === 0 && config.integrationUrl && (
+          <div className="text-gray-500 text-xs text-center py-4">No videos found</div>
+        )}
+
+        {!config.integrationUrl && (
+          <div className="text-gray-500 text-xs text-center py-4">Configure YouTube channel</div>
+        )}
+      </div>
+    </WidgetBase>
+  )
+}
+
 interface WidgetGridProps {
-  accounts: SocialAccount[]
+  accounts: any[]
   profileData: ProfileData
   profileId: string
   isEditMode: boolean
@@ -356,11 +590,15 @@ export function WidgetGrid({
     return globalThis.crypto.randomUUID()
   }
 
-  function createDefaultWidgetConfigs(accounts: SocialAccount[]): WidgetConfig[] {
+  function createDefaultWidgetConfigs(accounts: any[]): WidgetConfig[] {
     const socialConfigs: WidgetConfig[] = accounts.map((account, index) => ({
       id: generateUUID(),
       type:
-        account.platform === "calendly" || account.platform === "cafecito" || account.platform === "github"
+        account.platform === "calendly" ||
+        account.platform === "cafecito" ||
+        account.platform === "github" ||
+        account.platform === "medium" ||
+        account.platform === "youtube"
           ? "service"
           : "social",
       platform: account.platform,
@@ -414,38 +652,28 @@ export function WidgetGrid({
     }
   }
 
-  const addWidget = async (type: string) => {
+  const addWidget = async (type: string, integrationUrl?: string) => {
     console.log("[v0] Adding widget:", type)
-    const existingWidget = widgetConfigs.find((w) => w.platform === type)
-    if (existingWidget) {
-      console.log("[v0] Widget already exists for platform:", type)
-      return
-    }
-
-    if (INTEGRATED_WIDGETS[type as keyof typeof INTEGRATED_WIDGETS]) {
-      setIntegrationDialog({
-        isOpen: true,
-        widgetType: type,
-        url: "",
-      })
-      return
-    }
 
     const newWidget: WidgetConfig = {
-      id: generateUUID(),
+      id: Date.now().toString(),
       type:
-        type === "profile"
-          ? "profile"
-          : type === "calendly" || type === "cafecito" || type === "github"
-            ? "service"
-            : "social",
+        type === "youtube"
+          ? "youtube"
+          : type === "medium"
+            ? "medium"
+            : type === "github"
+              ? "github"
+              : type === "calendly"
+                ? "service"
+                : type === "cafecito"
+                  ? "service"
+                  : "social",
       platform: type,
       gridPosition: { x: 0, y: 0 },
-      gridSize: {
-        width: type === "cafecito" ? 2 : 2,
-        height: type === "cafecito" ? 1 : 2,
-      },
+      gridSize: { width: 2, height: 2 },
       visible: true,
+      integrationUrl,
     }
 
     setWidgetConfigs((prev) => [...prev, newWidget])
@@ -476,25 +704,7 @@ export function WidgetGrid({
       })
     } else {
       // Create new widget
-      const newWidget: WidgetConfig = {
-        id: generateUUID(),
-        type: "service",
-        platform: integrationDialog.widgetType,
-        gridPosition: { x: 0, y: 0 },
-        gridSize: {
-          width: integrationDialog.widgetType === "cafecito" ? 2 : 2,
-          height: integrationDialog.widgetType === "cafecito" ? 1 : 2,
-        },
-        visible: true,
-        integrationUrl: integrationDialog.url,
-      }
-
-      setWidgetConfigs((prev) => [...prev, newWidget])
-      await saveWidgetLayout(newWidget, profileId)
-
-      toast({
-        description: `${WIDGET_TYPES[integrationDialog.widgetType as keyof typeof WIDGET_TYPES]?.name || "Widget"} added`,
-      })
+      await addWidget(integrationDialog.widgetType, integrationDialog.url)
     }
 
     setIntegrationDialog({ isOpen: false, widgetType: "", url: "" }) // Reset editingWidgetId
@@ -509,8 +719,8 @@ export function WidgetGrid({
     })
   }
 
-  const createMockAccount = (platform: string): SocialAccount => {
-    const mockAccounts: Record<string, SocialAccount> = {
+  const createMockAccount = (platform: string): any => {
+    const mockAccounts: Record<string, any> = {
       instagram: {
         platform: "Instagram",
         handle: "@yourhandle",
@@ -558,6 +768,14 @@ export function WidgetGrid({
         icon: "🟣",
         color: "#8A63D2",
         url: `https://warpcast.com/yourhandle`,
+      },
+      medium: {
+        platform: "Medium",
+        handle: "@yourhandle",
+        followers: "10 articles",
+        icon: "📝",
+        color: "#00AB6C",
+        url: `https://medium.com/@yourhandle`,
       },
     }
 
@@ -866,6 +1084,26 @@ export function WidgetGrid({
               } else if (config.platform === "github") {
                 return (
                   <GitHubWidget
+                    key={config.id}
+                    config={config}
+                    onConfigChange={handleConfigChange}
+                    isEditMode={isEditMode}
+                    allWidgets={widgetConfigs}
+                  />
+                )
+              } else if (config.platform === "medium") {
+                return (
+                  <MediumWidget
+                    key={config.id}
+                    config={config}
+                    onConfigChange={handleConfigChange}
+                    isEditMode={isEditMode}
+                    allWidgets={widgetConfigs}
+                  />
+                )
+              } else if (config.platform === "youtube") {
+                return (
+                  <YouTubeWidget
                     key={config.id}
                     config={config}
                     onConfigChange={handleConfigChange}
