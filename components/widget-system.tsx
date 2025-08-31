@@ -33,6 +33,7 @@ const INTEGRATED_WIDGETS = {
   cafecito: { name: "Cafecito", icon: "☕", placeholder: "https://cafecito.app/yourname" },
   github: { name: "GitHub", icon: "💻", placeholder: "https://github.com/username or just username" },
   medium: { name: "Medium", icon: "📝", placeholder: "https://medium.com/@username or just username" },
+  substack: { name: "Substack", icon: "📰", placeholder: "https://yourname.substack.com" },
 }
 
 const WIDGET_TYPES = {
@@ -51,6 +52,7 @@ const WIDGET_COLORS = {
   calendly: ["#006BFF", "#00A2FF", "#0080FF", "#4A90E2"],
   cafecito: ["#FF6B35", "#F7931E", "#FFB74D", "#FF8A65"],
   medium: ["#00AB6C", "#1A8917", "#03A87C", "#00D084"],
+  substack: ["#FF6719", "#FF8C42", "#FF5722", "#E64A19"],
 }
 
 interface SocialAccount {
@@ -72,6 +74,7 @@ interface ProfileData {
   joinDate: string
   followers: string
   following: string
+  ensIdentity?: string
 }
 
 function CalendlyWidget({
@@ -416,6 +419,138 @@ function MediumWidget({
   )
 }
 
+function SubstackWidget({
+  config,
+  onConfigChange,
+  isEditMode,
+  allWidgets,
+}: {
+  config: WidgetConfig
+  onConfigChange: (id: string, newConfig: Partial<WidgetConfig>) => void
+  isEditMode: boolean
+  allWidgets?: WidgetConfig[]
+}) {
+  const [substackData, setSubstackData] = useState<{
+    title: string
+    description: string
+    articles: Array<{
+      title: string
+      link: string
+      pubDate: string
+      creator: string
+      categories: string[]
+    }>
+  } | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [substackUrl, setSubstackUrl] = useState("")
+
+  useEffect(() => {
+    if (config.integrationUrl) {
+      fetchSubstackData(config.integrationUrl)
+    }
+  }, [config.integrationUrl])
+
+  const extractSubstackUrl = (input: string): string => {
+    // Extract base URL from Substack URL
+    const substackUrlRegex = /^(https?:\/\/[^.]+\.substack\.com)/
+    const match = input.match(substackUrlRegex)
+    return match ? match[1] : input.trim()
+  }
+
+  const fetchSubstackData = async (input: string) => {
+    const extractedUrl = extractSubstackUrl(input)
+    setSubstackUrl(extractedUrl)
+    setLoading(true)
+
+    try {
+      const response = await fetch(`/api/substack-articles?url=${encodeURIComponent(extractedUrl)}`)
+      if (response.ok) {
+        const data = await response.json()
+        setSubstackData(data)
+      } else {
+        console.error("Failed to fetch Substack data")
+      }
+    } catch (error) {
+      console.error("Error fetching Substack data:", error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleClick = () => {
+    if (substackUrl) {
+      window.open(substackUrl, "_blank")
+    }
+  }
+
+  const formatDate = (dateString: string): string => {
+    const date = new Date(dateString)
+    return date.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    })
+  }
+
+  const getSubstackName = (url: string): string => {
+    const match = url.match(/https?:\/\/([^.]+)\.substack\.com/)
+    return match ? match[1] : "Substack"
+  }
+
+  return (
+    <WidgetBase config={config} onConfigChange={onConfigChange} isEditMode={isEditMode} allWidgets={allWidgets}>
+      <div className={`h-full ${!isEditMode ? "cursor-pointer" : ""}`} onClick={!isEditMode ? handleClick : undefined}>
+        <div className="flex items-center gap-2 mb-3">
+          <div className="w-8 h-8 bg-orange-600 rounded-lg flex items-center justify-center text-white text-sm">📰</div>
+          <div>
+            <h3 className="font-semibold text-sm">Substack</h3>
+            <p className="text-xs text-muted-foreground">
+              {substackUrl ? getSubstackName(substackUrl) : "Connect your Substack"}
+            </p>
+          </div>
+        </div>
+
+        {loading ? (
+          <div className="flex items-center justify-center h-20">
+            <div className="text-xs text-muted-foreground">Loading articles...</div>
+          </div>
+        ) : substackData && substackData.articles.length > 0 ? (
+          <div className="space-y-3 overflow-hidden h-full flex flex-col">
+            <div className="text-center flex-shrink-0">
+              <div className="text-lg font-bold text-orange-600">{substackData.articles.length}</div>
+              <div className="text-xs text-muted-foreground">articles published</div>
+            </div>
+
+            <div className="space-y-2 flex-1 min-h-0 overflow-y-auto">
+              {substackData.articles.slice(0, Math.min(5, substackData.articles.length)).map((article, index) => (
+                <div key={index} className="border-l-2 border-orange-500 pl-2 flex-shrink-0">
+                  <h4 className="text-xs font-medium line-clamp-2 leading-tight">{article.title}</h4>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-xs text-muted-foreground">{formatDate(article.pubDate)}</span>
+                    {article.categories.length > 0 && (
+                      <>
+                        <span className="text-xs text-muted-foreground">•</span>
+                        <span className="text-xs text-orange-600 font-medium">{article.categories[0]}</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center justify-center h-20">
+            <div className="text-center">
+              <div className="text-xs text-muted-foreground">Connect your Substack</div>
+              <div className="text-xs text-muted-foreground">to see articles</div>
+            </div>
+          </div>
+        )}
+      </div>
+    </WidgetBase>
+  )
+}
+
 const YouTubeWidget = ({ config, onConfigChange, isEditMode, allWidgets }: any) => {
   const [videos, setVideos] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
@@ -598,7 +733,8 @@ export function WidgetGrid({
         account.platform === "cafecito" ||
         account.platform === "github" ||
         account.platform === "medium" ||
-        account.platform === "youtube"
+        account.platform === "youtube" ||
+        account.platform === "substack"
           ? "service"
           : "social",
       platform: account.platform,
@@ -668,7 +804,9 @@ export function WidgetGrid({
                 ? "service"
                 : type === "cafecito"
                   ? "service"
-                  : "social",
+                  : type === "substack"
+                    ? "service"
+                    : "social",
       platform: type,
       gridPosition: { x: 0, y: 0 },
       gridSize: { width: 2, height: 2 },
@@ -778,6 +916,14 @@ export function WidgetGrid({
         color: "#00AB6C",
         url: `https://medium.com/@yourhandle`,
       },
+      substack: {
+        platform: "Substack",
+        handle: "yourname",
+        followers: "100 subscribers",
+        icon: "📰",
+        color: "#FF6719",
+        url: `https://yourname.substack.com`,
+      },
     }
 
     return mockAccounts[platform] || mockAccounts.instagram
@@ -792,6 +938,20 @@ export function WidgetGrid({
   const GRID_SIZE = 40 // Reduced from 60 to 40 for much more granular positioning
   const GRID_GAP = 8 // Reduced from 10 to 8 for even tighter spacing
 
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768)
+    }
+
+    checkMobile()
+    window.addEventListener("resize", checkMobile)
+    return () => window.removeEventListener("resize", checkMobile)
+  }, [])
+
+  const effectiveEditMode = isEditMode && !isMobile
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -804,65 +964,84 @@ export function WidgetGrid({
 
   return (
     <div className="space-y-6">
-      {!isEditMode ? (
-        <div className="flex items-start justify-between mb-8">
-          <div className="flex items-center gap-4 flex-1">
-            <img
-              src={profileData.avatar || "/placeholder.svg"}
-              alt={profileData.name}
-              className="w-20 h-20 rounded-full object-cover"
-            />
-            <div className="flex-1">
-              <h1 className="text-xl font-bold">{profileData.name}</h1>
-              <p className="text-muted-foreground">@{profileData.username}</p>
+      <div className="flex items-start justify-between mb-8 md:flex-row flex-col gap-4">
+        <div className="flex items-center gap-4 flex-1 md:flex-row flex-col md:text-left text-center">
+          <img
+            src={profileData.avatar || "/placeholder.svg"}
+            alt={profileData.name}
+            className="w-20 h-20 rounded-full object-cover"
+          />
+          <div className="flex-1">
+            <h1 className="text-xl font-bold">{profileData.name}</h1>
+            <p className="text-muted-foreground">@{profileData.username}</p>
+            {effectiveEditMode ? (
+              <textarea
+                value={profileData.bio || ""}
+                onChange={(e) => onBioChange(e.target.value)}
+                placeholder="Add your bio..."
+                className="text-sm text-muted-foreground mt-1 max-w-md bg-transparent border-none resize-none focus:outline-none focus:ring-1 focus:ring-primary rounded p-1"
+                rows={2}
+              />
+            ) : (
               <p className="text-sm text-muted-foreground mt-1 max-w-md">{profileData.bio}</p>
-            </div>
-          </div>
-
-          <div className="flex-shrink-0 ml-4">
-            <div className="bg-gradient-to-br from-blue-400 to-blue-500 rounded-lg p-4 text-white min-w-[200px]">
-              <div className="text-center">
-                {ensIdentity ? (
-                  <div>
-                    <a
-                      href={`https://peanut.me/${ensIdentity}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="font-bold text-lg hover:underline transition-all duration-200 hover:text-blue-100"
-                    >
-                      {ensIdentity}
-                    </a>
-                    <div className="flex items-center justify-center gap-3 mt-2">
-                      <a
-                        href={`https://peanut.me/${ensIdentity}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-xs text-blue-100 opacity-90 hover:opacity-100 transition-opacity"
-                      >
-                        💰 Send tips
-                      </a>
-                      <span className="text-blue-100 opacity-50">•</span>
-                      <a
-                        href={`https://app.ens.domains/${ensIdentity}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-xs text-blue-100 opacity-90 hover:opacity-100 transition-opacity"
-                      >
-                        🌐 My ENS
-                      </a>
-                    </div>
-                  </div>
-                ) : (
-                  <h3 className="font-bold text-lg">ENS.ETH</h3>
-                )}
-              </div>
-            </div>
+            )}
           </div>
         </div>
-      ) : null}
 
-      <div className="flex gap-4">
-        {isEditMode && (
+        <div className="flex flex-col items-center gap-2 md:items-end">
+          {profileData.ensIdentity ? (
+            effectiveEditMode ? (
+              <input
+                type="text"
+                value={profileData.ensIdentity}
+                onChange={(e) => onEnsUpdate(e.target.value)}
+                placeholder="your-name.eth"
+                className="text-sm bg-primary/10 text-primary px-3 py-1 rounded-full border border-primary/20 focus:outline-none focus:ring-1 focus:ring-primary text-center"
+              />
+            ) : (
+              <div className="flex flex-col items-center gap-1">
+                <a
+                  href={`https://peanut.me/${profileData.ensIdentity}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm bg-primary/10 text-primary px-3 py-1 rounded-full border border-primary/20 hover:bg-primary/20 transition-colors"
+                >
+                  {profileData.ensIdentity}
+                </a>
+                <div className="flex gap-2 text-xs">
+                  <a
+                    href={`https://peanut.me/${profileData.ensIdentity}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-green-600 hover:text-green-700 transition-colors"
+                  >
+                    💰 Send tips
+                  </a>
+                  <a
+                    href={`https://app.ens.domains/${profileData.ensIdentity}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:text-blue-700 transition-colors"
+                  >
+                    🔗 My ENS
+                  </a>
+                </div>
+              </div>
+            )
+          ) : effectiveEditMode ? (
+            <input
+              type="text"
+              value=""
+              onChange={(e) => onEnsUpdate(e.target.value)}
+              placeholder="Add ENS identity"
+              className="text-sm bg-muted px-3 py-1 rounded-full border focus:outline-none focus:ring-1 focus:ring-primary text-center"
+            />
+          ) : null}
+        </div>
+      </div>
+
+      <div className={`${isMobile ? "block" : "flex gap-4"}`}>
+        {effectiveEditMode && !isMobile && (
           <div className="w-64 bg-card border rounded-lg p-4 h-fit">
             <h3 className="font-semibold mb-3">Available Widgets</h3>
             <div className="space-y-3">
@@ -1004,139 +1183,190 @@ export function WidgetGrid({
           </div>
         )}
 
-        <div className="flex-1">
-          {isEditMode && (
-            <div className="flex items-start justify-between mb-6">
-              <div className="flex items-center gap-4 flex-1">
-                <img
-                  src={profileData.avatar || "/placeholder.svg"}
-                  alt={profileData.name}
-                  className="w-20 h-20 rounded-full object-cover"
-                />
-                <div className="flex-1">
-                  <h1 className="text-xl font-bold">{profileData.name}</h1>
-                  <p className="text-muted-foreground">@{profileData.username}</p>
-                  <textarea
-                    value={profileData.bio}
-                    onChange={(e) => onBioChange?.(e.target.value)}
-                    placeholder="Write your bio..."
-                    className="text-sm text-muted-foreground mt-1 max-w-md w-full resize-none border rounded p-2 min-h-[60px]"
-                  />
-                </div>
-              </div>
-
-              <div className="flex-shrink-0 ml-4">
-                <div className="bg-gradient-to-br from-blue-400 to-blue-500 rounded-lg p-4 text-white min-w-[200px]">
-                  <div className="text-center">
-                    <div>
-                      <h3 className="font-bold text-sm mb-2">ENS Identity</h3>
-                      <input
-                        type="text"
-                        value={ensIdentity || ""}
-                        onChange={(e) => onEnsUpdate?.(e.target.value)}
-                        placeholder="yourname.eth"
-                        className="w-full text-center bg-white/20 border border-white/30 rounded px-2 py-1 text-sm placeholder-white/70"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          <div
-            className={`relative min-h-[600px] transition-all duration-200 ${
-              isEditMode ? "bg-gradient-to-br from-muted/20 to-muted/40" : ""
-            }`}
-            style={{
-              backgroundImage: isEditMode
+        <div
+          className={`relative min-h-[600px] transition-all duration-200 ${
+            effectiveEditMode ? "bg-gradient-to-br from-muted/20 to-muted/40" : ""
+          } ${isMobile ? "w-full" : "flex-1"}`}
+          style={{
+            backgroundImage:
+              effectiveEditMode && !isMobile
                 ? `radial-gradient(circle at 1px 1px, rgba(var(--primary), 0.15) 1px, transparent 0)`
                 : undefined,
-              backgroundSize: isEditMode ? `${GRID_SIZE + GRID_GAP}px ${GRID_SIZE + GRID_GAP}px` : undefined,
-            }}
-          >
-            {gridWidgets.map((config) => {
-              if (config.type === "social") {
-                let account = accounts.find((a) => a.platform === config.platform)
-                if (!account) {
-                  console.log("[v0] No real account found for", config.platform, "using mock data")
-                  account = createMockAccount(config.platform)
+            backgroundSize:
+              effectiveEditMode && !isMobile ? `${GRID_SIZE + GRID_GAP}px ${GRID_SIZE + GRID_GAP}px` : undefined,
+          }}
+        >
+          {isMobile ? (
+            <div className="space-y-4 p-4">
+              {gridWidgets.map((config) => {
+                // Render widgets in a simple vertical stack for mobile
+                if (config.type === "social") {
+                  let account = accounts.find((a) => a.platform === config.platform)
+                  if (!account) {
+                    account = createMockAccount(config.platform)
+                  }
+
+                  return (
+                    <div key={config.id} className="w-full">
+                      <SocialWidget
+                        config={config}
+                        onConfigChange={handleConfigChange}
+                        isEditMode={false} // Always false on mobile
+                        account={account}
+                        customColor={config.customColor}
+                        allWidgets={widgetConfigs}
+                      />
+                    </div>
+                  )
+                } else if (config.platform === "calendly") {
+                  return (
+                    <div key={config.id} className="w-full">
+                      <CalendlyWidget
+                        config={config}
+                        onConfigChange={handleConfigChange}
+                        isEditMode={false}
+                        allWidgets={widgetConfigs}
+                      />
+                    </div>
+                  )
+                } else if (config.platform === "cafecito") {
+                  return (
+                    <div key={config.id} className="w-full">
+                      <CafecitoWidget
+                        config={config}
+                        onConfigChange={handleConfigChange}
+                        isEditMode={false}
+                        allWidgets={widgetConfigs}
+                      />
+                    </div>
+                  )
+                } else if (config.platform === "github") {
+                  return (
+                    <div key={config.id} className="w-full">
+                      <GitHubWidget
+                        key={config.id}
+                        config={config}
+                        onConfigChange={handleConfigChange}
+                        isEditMode={false}
+                        allWidgets={widgetConfigs}
+                      />
+                    </div>
+                  )
+                } else if (config.platform === "medium") {
+                  return (
+                    <div key={config.id} className="w-full">
+                      <MediumWidget
+                        key={config.id}
+                        config={config}
+                        onConfigChange={handleConfigChange}
+                        isEditMode={false}
+                        allWidgets={widgetConfigs}
+                      />
+                    </div>
+                  )
+                } else if (config.platform === "substack") {
+                  return (
+                    <div key={config.id} className="w-full">
+                      <SubstackWidget
+                        key={config.id}
+                        config={config}
+                        onConfigChange={handleConfigChange}
+                        isEditMode={false}
+                        allWidgets={widgetConfigs}
+                      />
+                    </div>
+                  )
                 }
+                return null
+              })}
+            </div>
+          ) : (
+            // Desktop: Use existing grid positioning
+            <>
+              {gridWidgets.map((config) => {
+                if (config.type === "social") {
+                  let account = accounts.find((a) => a.platform === config.platform)
+                  if (!account) {
+                    console.log("[v0] No real account found for", config.platform, "using mock data")
+                    account = createMockAccount(config.platform)
+                  }
 
-                return (
-                  <SocialWidget
-                    key={config.id}
-                    config={config}
-                    onConfigChange={handleConfigChange}
-                    isEditMode={isEditMode}
-                    account={account}
-                    customColor={config.customColor}
-                    allWidgets={widgetConfigs}
-                  />
-                )
-              } else if (config.platform === "calendly") {
-                return (
-                  <CalendlyWidget
-                    key={config.id}
-                    config={config}
-                    onConfigChange={handleConfigChange}
-                    isEditMode={isEditMode}
-                    allWidgets={widgetConfigs}
-                  />
-                )
-              } else if (config.platform === "cafecito") {
-                return (
-                  <CafecitoWidget
-                    key={config.id}
-                    config={config}
-                    onConfigChange={handleConfigChange}
-                    isEditMode={isEditMode}
-                    allWidgets={widgetConfigs}
-                  />
-                )
-              } else if (config.platform === "github") {
-                return (
-                  <GitHubWidget
-                    key={config.id}
-                    config={config}
-                    onConfigChange={handleConfigChange}
-                    isEditMode={isEditMode}
-                    allWidgets={widgetConfigs}
-                  />
-                )
-              } else if (config.platform === "medium") {
-                return (
-                  <MediumWidget
-                    key={config.id}
-                    config={config}
-                    onConfigChange={handleConfigChange}
-                    isEditMode={isEditMode}
-                    allWidgets={widgetConfigs}
-                  />
-                )
-              } else if (config.platform === "youtube") {
-                return (
-                  <YouTubeWidget
-                    key={config.id}
-                    config={config}
-                    onConfigChange={handleConfigChange}
-                    isEditMode={isEditMode}
-                    allWidgets={widgetConfigs}
-                  />
-                )
-              }
-              return null
-            })}
-
-            {isEditMode && gridWidgets.length === 0 && (
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="text-center text-muted-foreground">
-                  <p>No widgets in grid</p>
-                  <p className="text-sm">Use the widget panel to add widgets</p>
-                </div>
-              </div>
-            )}
-          </div>
+                  return (
+                    <SocialWidget
+                      key={config.id}
+                      config={config}
+                      onConfigChange={handleConfigChange}
+                      isEditMode={effectiveEditMode}
+                      account={account}
+                      customColor={config.customColor}
+                      allWidgets={widgetConfigs}
+                    />
+                  )
+                } else if (config.platform === "calendly") {
+                  return (
+                    <CalendlyWidget
+                      key={config.id}
+                      config={config}
+                      onConfigChange={handleConfigChange}
+                      isEditMode={effectiveEditMode}
+                      allWidgets={widgetConfigs}
+                    />
+                  )
+                } else if (config.platform === "cafecito") {
+                  return (
+                    <CafecitoWidget
+                      key={config.id}
+                      config={config}
+                      onConfigChange={handleConfigChange}
+                      isEditMode={effectiveEditMode}
+                      allWidgets={widgetConfigs}
+                    />
+                  )
+                } else if (config.platform === "github") {
+                  return (
+                    <GitHubWidget
+                      key={config.id}
+                      config={config}
+                      onConfigChange={handleConfigChange}
+                      isEditMode={effectiveEditMode}
+                      allWidgets={widgetConfigs}
+                    />
+                  )
+                } else if (config.platform === "medium") {
+                  return (
+                    <MediumWidget
+                      key={config.id}
+                      config={config}
+                      onConfigChange={handleConfigChange}
+                      isEditMode={effectiveEditMode}
+                      allWidgets={widgetConfigs}
+                    />
+                  )
+                } else if (config.platform === "youtube") {
+                  return (
+                    <YouTubeWidget
+                      key={config.id}
+                      config={config}
+                      onConfigChange={handleConfigChange}
+                      isEditMode={effectiveEditMode}
+                      allWidgets={widgetConfigs}
+                    />
+                  )
+                } else if (config.platform === "substack") {
+                  return (
+                    <SubstackWidget
+                      key={config.id}
+                      config={config}
+                      onConfigChange={handleConfigChange}
+                      isEditMode={effectiveEditMode}
+                      allWidgets={widgetConfigs}
+                    />
+                  )
+                }
+                return null
+              })}
+            </>
+          )}
         </div>
       </div>
 
