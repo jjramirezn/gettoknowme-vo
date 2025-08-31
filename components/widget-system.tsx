@@ -327,8 +327,8 @@ export function WidgetGrid({
 
   const gridWidgets = widgetConfigs.filter((w) => w.visible)
 
-  const GRID_SIZE = 80 // Reduced from 120 to 80 for more granular positioning
-  const GRID_GAP = 12 // Reduced from 16 to 12 for tighter spacing
+  const GRID_SIZE = 60 // Reduced from 80 to 60 for even more granular positioning
+  const GRID_GAP = 10 // Reduced from 12 to 10 for tighter spacing
 
   if (isLoading) {
     return (
