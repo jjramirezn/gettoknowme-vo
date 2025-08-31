@@ -189,6 +189,7 @@ export default function PublicProfilePage({ params }: { params: { username: stri
           }),
           followers: "0",
           following: "0",
+          ensIdentity: profileData.ens_identity || "",
         })
       } else {
         console.log("[v0] No profile found for:", params.username)
@@ -336,30 +337,45 @@ export default function PublicProfilePage({ params }: { params: { username: stri
     async (ens: string) => {
       if (!profileId || !isOwnProfile) return
 
+      console.log("[v0] ENS update called with:", ens)
+      console.log("[v0] Profile ID:", profileId)
+      console.log("[v0] Is own profile:", isOwnProfile)
+
       setEnsInput(ens)
       setEnsIdentity(ens)
 
       if (ensTimeoutRef.current) {
         clearTimeout(ensTimeoutRef.current)
+        console.log("[v0] Cleared previous ENS timeout")
       }
 
       ensTimeoutRef.current = setTimeout(async () => {
         try {
-          await supabase.from("profiles").update({ ens_identity: ens }).eq("id", profileId)
+          console.log("[v0] Saving ENS identity to database:", ens)
+          const { error } = await supabase.from("profiles").update({ ens_identity: ens }).eq("id", profileId)
+
+          if (error) {
+            console.error("[v0] Database error saving ENS:", error)
+            throw error
+          }
+
+          console.log("[v0] ENS identity saved successfully")
+
+          setUserData((prev) => (prev ? { ...prev, ensIdentity: ens } : null))
 
           toast({
             title: "ENS identity updated",
             description: "Your ENS identity has been saved successfully.",
           })
         } catch (error) {
-          console.error("Error updating ENS:", error)
+          console.error("[v0] Error updating ENS:", error)
           toast({
             title: "ENS update failed",
             description: "There was an error saving your ENS identity. Please try again.",
             variant: "destructive",
           })
         }
-      }, 500) // 500ms debounce instead of 1 second
+      }, 1500) // Increased debounce timeout from 500ms to 1500ms to reduce database calls
     },
     [profileId, isOwnProfile, supabase, toast],
   )
@@ -396,6 +412,7 @@ export default function PublicProfilePage({ params }: { params: { username: stri
       joinDate: userData?.joinDate,
       followers: userData?.followers,
       following: userData?.following,
+      ensIdentity: userData?.ensIdentity,
     }),
     [userData, bioInput, isEditMode, isOwnProfile],
   )
