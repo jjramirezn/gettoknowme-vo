@@ -94,7 +94,7 @@ export default function HomePage() {
       <div className="max-w-7xl mx-auto w-full">
         <div className="grid lg:grid-cols-2 items-center lg:gap-[81px]">
           <div className="flex justify-center lg:justify-end w-min">
-            <div className="w-80 h-80 bg-gradient-to-br from-[#9C8FB7] to-[#9C8FB7]/80 rounded-3xl flex items-center justify-center shadow-2xl transform hover:scale-105 transition-transform duration-300 mx-14">
+            <div className="w-80 h-80 bg-gradient-to-br from-[#9C8FB7] to-[#9C8FB7]/80 rounded-3xl flex items-center justify-center shadow-2xl transform hover:scale-105 transition-transform duration-300 mx-14 mr-[0] ml-44">
               <span className="text-8xl font-black drop-shadow-lg" style={{ color: "#FFD54A" }}>
                 ME
               </span>
