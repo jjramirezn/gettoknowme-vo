@@ -206,9 +206,16 @@ export function WidgetBase({
           const newWidth = Math.max(1, Math.round(resizeStart.width + deltaX / (GRID_SIZE + GRID_GAP)))
           const newHeight = Math.max(1, Math.round(resizeStart.height + deltaY / (GRID_SIZE + GRID_GAP)))
 
+          console.log("[v0] Resize attempt:", {
+            originalSize: { width: resizeStart.width, height: resizeStart.height },
+            newSize: { width: newWidth, height: newHeight },
+            delta: { deltaX, deltaY },
+            position: config.gridPosition,
+          })
+
           const otherWidgets = allWidgets.filter((w) => w.id !== config.id && w.visible)
-          const wouldCollide = otherWidgets.some((widget) =>
-            checkCollision(
+          const wouldCollide = otherWidgets.some((widget) => {
+            const collision = checkCollision(
               { x: config.gridPosition.x, y: config.gridPosition.y, width: newWidth, height: newHeight },
               {
                 x: widget.gridPosition.x,
@@ -216,11 +223,32 @@ export function WidgetBase({
                 width: widget.gridSize.width,
                 height: widget.gridSize.height,
               },
-            ),
-          )
+            )
+            if (collision) {
+              console.log("[v0] Collision detected with widget:", widget.id, {
+                currentWidget: {
+                  x: config.gridPosition.x,
+                  y: config.gridPosition.y,
+                  width: newWidth,
+                  height: newHeight,
+                },
+                otherWidget: {
+                  x: widget.gridPosition.x,
+                  y: widget.gridPosition.y,
+                  width: widget.gridSize.width,
+                  height: widget.gridSize.height,
+                },
+              })
+            }
+            return collision
+          })
+
+          console.log("[v0] Collision check result:", { wouldCollide, otherWidgetsCount: otherWidgets.length })
 
           if (!wouldCollide) {
             setResizePreview({ width: newWidth, height: newHeight })
+          } else {
+            console.log("[v0] Resize blocked by collision")
           }
         }
       })
@@ -232,13 +260,17 @@ export function WidgetBase({
     if (!isDragging && !isResizing) return
 
     if (isDragging && dragPreview) {
+      console.log("[v0] Drag completed, new position:", dragPreview)
       onConfigChange(config.id, { gridPosition: dragPreview })
       setDragPreview(null)
     }
 
     if (isResizing && resizePreview) {
+      console.log("[v0] Resize completed, new size:", resizePreview)
       onConfigChange(config.id, { gridSize: resizePreview })
       setResizePreview(null)
+    } else if (isResizing) {
+      console.log("[v0] Resize cancelled - no preview available")
     }
 
     setIsDragging(false)
