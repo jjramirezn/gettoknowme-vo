@@ -656,7 +656,7 @@ export function WidgetGrid({
     console.log("[v0] Adding widget:", type)
 
     const newWidget: WidgetConfig = {
-      id: Date.now().toString(),
+      id: generateUUID(),
       type:
         type === "youtube"
           ? "youtube"
@@ -677,6 +677,7 @@ export function WidgetGrid({
     }
 
     setWidgetConfigs((prev) => [...prev, newWidget])
+    console.log("[v0] Saving new widget to database:", newWidget.id, newWidget.platform)
     await saveWidgetLayout(newWidget, profileId)
 
     toast({
