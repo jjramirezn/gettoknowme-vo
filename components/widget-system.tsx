@@ -327,8 +327,8 @@ export function WidgetGrid({
 
   const gridWidgets = widgetConfigs.filter((w) => w.visible)
 
-  const GRID_SIZE = 60 // Reduced from 80 to 60 for even more granular positioning
-  const GRID_GAP = 10 // Reduced from 12 to 10 for tighter spacing
+  const GRID_SIZE = 40 // Reduced from 60 to 40 for much more granular positioning
+  const GRID_GAP = 8 // Reduced from 10 to 8 for even tighter spacing
 
   if (isLoading) {
     return (
@@ -342,84 +342,63 @@ export function WidgetGrid({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between mb-8">
-        <div className="flex items-center gap-4 flex-1">
-          <img
-            src={profileData.avatar || "/placeholder.svg"}
-            alt={profileData.name}
-            className="w-20 h-20 rounded-full object-cover"
-          />
-          <div className="flex-1">
-            <h1 className="text-xl font-bold">{profileData.name}</h1>
-            <p className="text-muted-foreground">@{profileData.username}</p>
-            {isEditMode ? (
-              <textarea
-                value={profileData.bio}
-                onChange={(e) => onBioChange?.(e.target.value)} // Use onBioChange instead of onProfileUpdate for debounced updates
-                placeholder="Write your bio..."
-                className="text-sm text-muted-foreground mt-1 max-w-md w-full resize-none border rounded p-2 min-h-[60px]"
-              />
-            ) : (
+      {!isEditMode ? (
+        // View mode: profile left, ENS right, grid below
+        <div className="flex items-start justify-between mb-8">
+          <div className="flex items-center gap-4 flex-1">
+            <img
+              src={profileData.avatar || "/placeholder.svg"}
+              alt={profileData.name}
+              className="w-20 h-20 rounded-full object-cover"
+            />
+            <div className="flex-1">
+              <h1 className="text-xl font-bold">{profileData.name}</h1>
+              <p className="text-muted-foreground">@{profileData.username}</p>
               <p className="text-sm text-muted-foreground mt-1 max-w-md">{profileData.bio}</p>
-            )}
+            </div>
           </div>
-        </div>
 
-        <div className="flex-shrink-0 ml-4">
-          <div className="bg-gradient-to-br from-blue-400 to-blue-500 rounded-lg p-4 text-white min-w-[200px]">
-            <div className="text-center">
-              {isEditMode ? (
-                <div>
-                  <h3 className="font-bold text-sm mb-2">ENS Identity</h3>
-                  <input
-                    type="text"
-                    value={ensIdentity || ""}
-                    onChange={(e) => onEnsUpdate?.(e.target.value)}
-                    placeholder="yourname.eth"
-                    className="w-full text-center bg-white/20 border border-white/30 rounded px-2 py-1 text-sm placeholder-white/70"
-                  />
-                </div>
-              ) : (
-                <div>
-                  {ensIdentity ? (
-                    <div>
+          <div className="flex-shrink-0 ml-4">
+            <div className="bg-gradient-to-br from-blue-400 to-blue-500 rounded-lg p-4 text-white min-w-[200px]">
+              <div className="text-center">
+                {ensIdentity ? (
+                  <div>
+                    <a
+                      href={`https://peanut.me/${ensIdentity}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-bold text-lg hover:underline transition-all duration-200 hover:text-blue-100"
+                    >
+                      {ensIdentity}
+                    </a>
+                    <div className="flex items-center justify-center gap-3 mt-2">
                       <a
                         href={`https://peanut.me/${ensIdentity}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="font-bold text-lg hover:underline transition-all duration-200 hover:text-blue-100"
+                        className="text-xs text-blue-100 opacity-90 hover:opacity-100 transition-opacity"
                       >
-                        {ensIdentity}
+                        💰 Send tips
                       </a>
-                      <div className="flex items-center justify-center gap-3 mt-2">
-                        <a
-                          href={`https://peanut.me/${ensIdentity}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-xs text-blue-100 opacity-90 hover:opacity-100 transition-opacity"
-                        >
-                          💰 Send tips
-                        </a>
-                        <span className="text-blue-100 opacity-50">•</span>
-                        <a
-                          href={`https://app.ens.domains/${ensIdentity}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-xs text-blue-100 opacity-90 hover:opacity-100 transition-opacity"
-                        >
-                          🌐 My ENS
-                        </a>
-                      </div>
+                      <span className="text-blue-100 opacity-50">•</span>
+                      <a
+                        href={`https://app.ens.domains/${ensIdentity}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-blue-100 opacity-90 hover:opacity-100 transition-opacity"
+                      >
+                        🌐 My ENS
+                      </a>
                     </div>
-                  ) : (
-                    <h3 className="font-bold text-lg">ENS.ETH</h3>
-                  )}
-                </div>
-              )}
+                  </div>
+                ) : (
+                  <h3 className="font-bold text-lg">ENS.ETH</h3>
+                )}
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      ) : null}
 
       <div className="flex gap-4">
         {isEditMode && (
@@ -482,6 +461,45 @@ export function WidgetGrid({
         )}
 
         <div className="flex-1">
+          {isEditMode && (
+            <div className="flex items-start justify-between mb-6">
+              <div className="flex items-center gap-4 flex-1">
+                <img
+                  src={profileData.avatar || "/placeholder.svg"}
+                  alt={profileData.name}
+                  className="w-20 h-20 rounded-full object-cover"
+                />
+                <div className="flex-1">
+                  <h1 className="text-xl font-bold">{profileData.name}</h1>
+                  <p className="text-muted-foreground">@{profileData.username}</p>
+                  <textarea
+                    value={profileData.bio}
+                    onChange={(e) => onBioChange?.(e.target.value)}
+                    placeholder="Write your bio..."
+                    className="text-sm text-muted-foreground mt-1 max-w-md w-full resize-none border rounded p-2 min-h-[60px]"
+                  />
+                </div>
+              </div>
+
+              <div className="flex-shrink-0 ml-4">
+                <div className="bg-gradient-to-br from-blue-400 to-blue-500 rounded-lg p-4 text-white min-w-[200px]">
+                  <div className="text-center">
+                    <div>
+                      <h3 className="font-bold text-sm mb-2">ENS Identity</h3>
+                      <input
+                        type="text"
+                        value={ensIdentity || ""}
+                        onChange={(e) => onEnsUpdate?.(e.target.value)}
+                        placeholder="yourname.eth"
+                        className="w-full text-center bg-white/20 border border-white/30 rounded px-2 py-1 text-sm placeholder-white/70"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div
             className={`relative min-h-[600px] transition-all duration-200 ${
               isEditMode ? "bg-gradient-to-br from-muted/20 to-muted/40" : ""
