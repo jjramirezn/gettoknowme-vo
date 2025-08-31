@@ -989,11 +989,11 @@ export function WidgetGrid({
         </div>
 
         <div className="flex flex-col items-center gap-2 md:items-end">
-          {profileData.ensIdentity ? (
+          {profileData.ensIdentity || ensIdentity ? (
             effectiveEditMode ? (
               <input
                 type="text"
-                value={profileData.ensIdentity}
+                value={ensIdentity || profileData.ensIdentity || ""}
                 onChange={(e) => onEnsUpdate(e.target.value)}
                 placeholder="your-name.eth"
                 className="text-sm bg-primary/10 text-primary px-3 py-1 rounded-full border border-primary/20 focus:outline-none focus:ring-1 focus:ring-primary text-center"
@@ -1031,7 +1031,7 @@ export function WidgetGrid({
           ) : effectiveEditMode ? (
             <input
               type="text"
-              value=""
+              value={ensIdentity || ""}
               onChange={(e) => onEnsUpdate(e.target.value)}
               placeholder="Add ENS identity"
               className="text-sm bg-muted px-3 py-1 rounded-full border focus:outline-none focus:ring-1 focus:ring-primary text-center"

@@ -90,11 +90,11 @@ export default function HomePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/20 via-primary/10 to-primary/30 flex items-center justify-center px-4 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-[#9C8FB7]/20 via-[#9C8FB7]/10 to-[#9C8FB7]/30 flex items-center justify-center px-4 lg:px-8">
       <div className="max-w-7xl mx-auto w-full">
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
           <div className="flex justify-center lg:justify-end">
-            <div className="w-80 h-80 bg-gradient-to-br from-primary to-primary/80 rounded-3xl flex items-center justify-center shadow-2xl transform hover:scale-105 transition-transform duration-300">
+            <div className="w-80 h-80 bg-gradient-to-br from-[#9C8FB7] to-[#9C8FB7]/80 rounded-3xl flex items-center justify-center shadow-2xl transform hover:scale-105 transition-transform duration-300">
               <span className="text-8xl font-black text-secondary drop-shadow-lg">ME</span>
             </div>
           </div>
@@ -103,7 +103,7 @@ export default function HomePage() {
             <h1 className="text-5xl lg:text-7xl font-bold text-foreground leading-tight">
               Show the world
               <br />
-              <span className="text-primary">the real you.</span>
+              <span className="text-[#9C8FB7]">the real you.</span>
             </h1>
 
             <div className="space-y-4 max-w-md mx-auto lg:mx-0">
@@ -142,7 +142,7 @@ export default function HomePage() {
                   <span className="w-full border-t border-muted-foreground/20" />
                 </div>
                 <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-gradient-to-br from-primary/20 via-primary/10 to-primary/30 px-2 text-muted-foreground">
+                  <span className="bg-gradient-to-br from-[#9C8FB7]/20 via-[#9C8FB7]/10 to-[#9C8FB7]/30 px-2 text-muted-foreground">
                     Or
                   </span>
                 </div>
@@ -162,11 +162,11 @@ export default function HomePage() {
 
             <p className="text-sm text-muted-foreground max-w-md mx-auto lg:mx-0">
               By signing up, you agree to the{" "}
-              <a href="/terms" className="underline hover:text-primary transition-colors">
+              <a href="/terms" className="underline hover:text-[#9C8FB7] transition-colors">
                 Terms of Service
               </a>{" "}
               and{" "}
-              <a href="/privacy" className="underline hover:text-primary transition-colors">
+              <a href="/privacy" className="underline hover:text-[#9C8FB7] transition-colors">
                 Privacy Policy
               </a>
               , including Cookie Use.
