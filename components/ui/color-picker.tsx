@@ -70,12 +70,19 @@ export function ColorPicker({
               ))}
             </div>
             <div className="pt-1 border-t">
-              <input
-                type="color"
-                value={value}
-                onChange={(e) => onChange(e.target.value)}
-                className="w-full h-6 rounded border border-border cursor-pointer"
-              />
+              <div className="relative">
+                <label className="text-xs text-muted-foreground mb-1 block">Custom color:</label>
+                <input
+                  type="color"
+                  value={value}
+                  onChange={(e) => onChange(e.target.value)}
+                  className="w-full h-8 rounded-md border-2 border-dashed border-gray-300 hover:border-primary cursor-pointer transition-all hover:shadow-sm bg-white"
+                  title="Click to open color picker"
+                />
+                <div className="absolute inset-0 rounded-md pointer-events-none border border-gray-200 flex items-center justify-center">
+                  <Palette className="w-3 h-3 text-gray-400" />
+                </div>
+              </div>
             </div>
           </div>
         </PopoverContent>
@@ -112,13 +119,19 @@ export function ColorPicker({
             ))}
           </div>
           <div className="pt-2 border-t">
-            <label className="text-xs text-muted-foreground">Custom color:</label>
-            <input
-              type="color"
-              value={value}
-              onChange={(e) => onChange(e.target.value)}
-              className="w-full h-8 rounded border border-border cursor-pointer"
-            />
+            <div className="relative">
+              <label className="text-xs text-muted-foreground mb-2 block">Custom color:</label>
+              <input
+                type="color"
+                value={value}
+                onChange={(e) => onChange(e.target.value)}
+                className="w-full h-10 rounded-lg border-2 border-dashed border-gray-300 hover:border-primary cursor-pointer transition-all hover:shadow-md bg-white"
+                title="Click to open color picker"
+              />
+              <div className="absolute inset-0 rounded-lg pointer-events-none border border-gray-200 flex items-center justify-center">
+                <Palette className="w-4 h-4 text-gray-400" />
+              </div>
+            </div>
           </div>
         </div>
       </PopoverContent>
