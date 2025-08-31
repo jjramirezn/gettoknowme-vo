@@ -327,6 +327,9 @@ export function WidgetGrid({
 
   const gridWidgets = widgetConfigs.filter((w) => w.visible)
 
+  const GRID_SIZE = 80 // Reduced from 120 to 80 for more granular positioning
+  const GRID_GAP = 12 // Reduced from 16 to 12 for tighter spacing
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -389,7 +392,14 @@ export function WidgetGrid({
                         {ensIdentity}
                       </a>
                       <div className="flex items-center justify-center gap-3 mt-2">
-                        <p className="text-xs text-blue-100 opacity-90">💰 Send tips</p>
+                        <a
+                          href={`https://peanut.me/${ensIdentity}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-blue-100 opacity-90 hover:opacity-100 transition-opacity"
+                        >
+                          💰 Send tips
+                        </a>
                         <span className="text-blue-100 opacity-50">•</span>
                         <a
                           href={`https://app.ens.domains/${ensIdentity}`}
@@ -397,7 +407,7 @@ export function WidgetGrid({
                           rel="noopener noreferrer"
                           className="text-xs text-blue-100 opacity-90 hover:opacity-100 transition-opacity"
                         >
-                          🌐 Manage ENS
+                          🌐 My ENS
                         </a>
                       </div>
                     </div>
@@ -480,7 +490,7 @@ export function WidgetGrid({
               backgroundImage: isEditMode
                 ? `radial-gradient(circle at 1px 1px, rgba(var(--primary), 0.15) 1px, transparent 0)`
                 : undefined,
-              backgroundSize: isEditMode ? `${120 + 16}px ${120 + 16}px` : undefined,
+              backgroundSize: isEditMode ? `${GRID_SIZE + GRID_GAP}px ${GRID_SIZE + GRID_GAP}px` : undefined,
             }}
           >
             {gridWidgets.map((config) => {
