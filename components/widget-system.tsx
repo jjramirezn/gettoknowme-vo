@@ -367,7 +367,20 @@ export function WidgetGrid({
                   />
                 </div>
               ) : (
-                <h3 className="font-bold text-lg">{ensIdentity || "ENS.ETH"}</h3>
+                <div>
+                  {ensIdentity ? (
+                    <a
+                      href={`https://peanut.me/${ensIdentity}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-bold text-lg hover:underline transition-all duration-200 hover:text-blue-100"
+                    >
+                      {ensIdentity}
+                    </a>
+                  ) : (
+                    <h3 className="font-bold text-lg">ENS.ETH</h3>
+                  )}
+                </div>
               )}
             </div>
           </div>

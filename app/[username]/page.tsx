@@ -326,7 +326,7 @@ export default function PublicProfilePage({ params }: { params: { username: stri
 
     bioTimeoutRef.current = setTimeout(() => {
       handleProfileUpdate({ bio: newBio })
-    }, 1000) // 1 second debounce
+    }, 500) // 500ms debounce instead of 1 second
   }, [])
 
   const handleEnsUpdate = useCallback(
@@ -356,7 +356,7 @@ export default function PublicProfilePage({ params }: { params: { username: stri
             variant: "destructive",
           })
         }
-      }, 1000) // 1 second debounce
+      }, 500) // 500ms debounce instead of 1 second
     },
     [profileId, isOwnProfile, supabase, toast],
   )
