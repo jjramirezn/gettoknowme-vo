@@ -15,6 +15,7 @@ interface WidgetConfig {
   gridSize: { width: number; height: number }
   visible: boolean
   customColor?: string // Added customColor property to persist widget colors
+  integrationUrl?: string // Added integrationUrl property for integrated widgets
 }
 
 interface WidgetBaseProps {

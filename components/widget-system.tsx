@@ -2,24 +2,42 @@
 
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Eye, EyeOff, Plus, Calendar } from "lucide-react"
+import { Eye, EyeOff, Plus, Calendar, ExternalLink, Pencil } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { ColorPicker } from "@/components/ui/color-picker"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 
 import { WidgetBase, type WidgetConfig } from "@/components/widget-base"
 import { SocialWidget } from "@/components/widgets/social-widget"
 import { getWidgetLayouts, saveWidgetLayout } from "@/lib/database/widget-layouts"
 
-const WIDGET_TYPES = {
-  profile: { name: "Profile", icon: "👤" },
+const PREVIEW_WIDGETS = {
   instagram: { name: "Instagram", icon: "📷" },
   twitter: { name: "Twitter", icon: "🐦" },
   youtube: { name: "YouTube", icon: "📺" },
-  github: { name: "GitHub", icon: "💻" },
   tiktok: { name: "TikTok", icon: "🎵" },
   farcaster: { name: "Farcaster", icon: "🟣" },
-  calendly: { name: "Calendly", icon: "📅" },
-  cafecito: { name: "Cafecito", icon: "☕" },
+}
+
+const INTEGRATED_WIDGETS = {
+  calendly: { name: "Calendly", icon: "📅", placeholder: "https://calendly.com/yourname" },
+  cafecito: { name: "Cafecito", icon: "☕", placeholder: "https://cafecito.app/yourname" },
+  github: { name: "GitHub", icon: "💻", placeholder: "https://github.com/username or just username" },
+}
+
+const WIDGET_TYPES = {
+  ...PREVIEW_WIDGETS,
+  ...INTEGRATED_WIDGETS,
+  profile: { name: "Profile", icon: "👤" },
 }
 
 const WIDGET_COLORS = {
@@ -65,9 +83,20 @@ function CalendlyWidget({
   isEditMode: boolean
   allWidgets?: WidgetConfig[]
 }) {
+  const handleClick = () => {
+    if (config.integrationUrl) {
+      window.open(config.integrationUrl, "_blank")
+    }
+  }
+
+  const isSmall = config.gridSize.width <= 1 || config.gridSize.height <= 1
+
   return (
     <WidgetBase config={config} onConfigChange={onConfigChange} isEditMode={isEditMode} allWidgets={allWidgets}>
-      <div className="flex items-center gap-2 mb-3">
+      <div
+        className={`flex items-center gap-2 mb-3 ${isSmall && !isEditMode ? "cursor-pointer" : ""}`}
+        onClick={isSmall && !isEditMode ? handleClick : undefined}
+      >
         <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center text-white text-sm">📅</div>
         <div>
           <h3 className="font-semibold text-sm">Calendly</h3>
@@ -80,11 +109,13 @@ function CalendlyWidget({
           <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
             <Calendar className="w-8 h-8 text-blue-600" />
           </div>
-          <h4 className="font-semibold mb-2">Book a 30-min call</h4>
+          <h4 className="font-semibold mb-2">Book a call</h4>
           <p className="text-sm text-muted-foreground mb-4">Let's discuss your project and see how I can help</p>
-          <Button className="w-full" size="sm">
-            Schedule Meeting
-          </Button>
+          {!isSmall && (
+            <Button className="w-full" size="sm" onClick={handleClick} disabled={!config.integrationUrl}>
+              Schedule Meeting
+            </Button>
+          )}
         </div>
       </div>
     </WidgetBase>
@@ -102,6 +133,12 @@ function CafecitoWidget({
   isEditMode: boolean
   allWidgets?: WidgetConfig[]
 }) {
+  const handleClick = () => {
+    if (config.integrationUrl) {
+      window.open(config.integrationUrl, "_blank")
+    }
+  }
+
   return (
     <WidgetBase
       config={config}
@@ -111,7 +148,10 @@ function CafecitoWidget({
       minSize={{ width: 1, height: 1 }}
       maxSize={{ width: 2, height: 1 }}
     >
-      <div className="flex items-center justify-between h-full">
+      <div
+        className={`flex items-center justify-between h-full ${!isEditMode ? "cursor-pointer" : ""}`}
+        onClick={!isEditMode ? handleClick : undefined}
+      >
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center text-white text-sm">☕</div>
           <div>
@@ -119,10 +159,130 @@ function CafecitoWidget({
             <p className="text-xs text-muted-foreground">Support my work</p>
           </div>
         </div>
-        {!isEditMode && (
-          <Button size="sm" className="bg-orange-500 hover:bg-orange-600">
-            ☕ $3
-          </Button>
+      </div>
+    </WidgetBase>
+  )
+}
+
+function GitHubWidget({
+  config,
+  onConfigChange,
+  isEditMode,
+  allWidgets,
+}: {
+  config: WidgetConfig
+  onConfigChange: (id: string, newConfig: Partial<WidgetConfig>) => void
+  isEditMode: boolean
+  allWidgets?: WidgetConfig[]
+}) {
+  const [githubData, setGithubData] = useState<{
+    total: { lastYear: number }
+    contributions: Array<{ date: string; count: number; level: number }>
+  } | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [username, setUsername] = useState("")
+
+  useEffect(() => {
+    if (config.integrationUrl) {
+      fetchGitHubData(config.integrationUrl)
+    }
+  }, [config.integrationUrl])
+
+  const extractUsername = (input: string): string => {
+    // Extract username from GitHub URL or return as-is if it's just a username
+    const githubUrlRegex = /(?:https?:\/\/)?(?:www\.)?github\.com\/([^/?#]+)/
+    const match = input.match(githubUrlRegex)
+    return match ? match[1] : input.trim()
+  }
+
+  const fetchGitHubData = async (input: string) => {
+    const extractedUsername = extractUsername(input)
+    setUsername(extractedUsername)
+    setLoading(true)
+
+    try {
+      const response = await fetch(`/api/github-contributions?username=${extractedUsername}`)
+      if (response.ok) {
+        const data = await response.json()
+        setGithubData(data)
+      } else {
+        console.error("Failed to fetch GitHub data")
+      }
+    } catch (error) {
+      console.error("Error fetching GitHub data:", error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleClick = () => {
+    if (username) {
+      window.open(`https://github.com/${username}`, "_blank")
+    }
+  }
+
+  const getContributionColor = (level: number): string => {
+    const colors = ["#ebedf0", "#9be9a8", "#40c463", "#30a14e", "#216e39"]
+    return colors[level] || colors[0]
+  }
+
+  // Get last 12 weeks of data for the chart
+  const getRecentContributions = () => {
+    if (!githubData) return []
+    const recent = githubData.contributions.slice(-84) // Last 12 weeks
+    const weeks = []
+    for (let i = 0; i < recent.length; i += 7) {
+      weeks.push(recent.slice(i, i + 7))
+    }
+    return weeks
+  }
+
+  return (
+    <WidgetBase config={config} onConfigChange={onConfigChange} isEditMode={isEditMode} allWidgets={allWidgets}>
+      <div className={`h-full ${!isEditMode ? "cursor-pointer" : ""}`} onClick={!isEditMode ? handleClick : undefined}>
+        <div className="flex items-center gap-2 mb-3">
+          <div className="w-8 h-8 bg-gray-900 rounded-lg flex items-center justify-center text-white text-sm">💻</div>
+          <div>
+            <h3 className="font-semibold text-sm">GitHub</h3>
+            <p className="text-xs text-muted-foreground">{username ? `@${username}` : "Connect your GitHub"}</p>
+          </div>
+        </div>
+
+        {loading ? (
+          <div className="flex items-center justify-center h-20">
+            <div className="text-xs text-muted-foreground">Loading...</div>
+          </div>
+        ) : githubData ? (
+          <div className="space-y-3">
+            <div className="text-center">
+              <div className="text-lg font-bold text-green-600">{githubData.total.lastYear}</div>
+              <div className="text-xs text-muted-foreground">contributions last year</div>
+            </div>
+
+            <div className="overflow-hidden">
+              <div className="grid grid-cols-12 gap-[1px] max-w-full">
+                {getRecentContributions().map((week, weekIndex) => (
+                  <div key={weekIndex} className="flex flex-col gap-[1px]">
+                    {week.map((day, dayIndex) => (
+                      <div
+                        key={`${weekIndex}-${dayIndex}`}
+                        className="w-2 h-2 rounded-sm"
+                        style={{ backgroundColor: getContributionColor(day.level) }}
+                        title={`${day.count} contributions on ${day.date}`}
+                      />
+                    ))}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center justify-center h-20">
+            <div className="text-center">
+              <div className="text-xs text-muted-foreground">Connect your GitHub</div>
+              <div className="text-xs text-muted-foreground">to see contributions</div>
+            </div>
+          </div>
         )}
       </div>
     </WidgetBase>
@@ -154,6 +314,16 @@ export function WidgetGrid({
 }: WidgetGridProps) {
   const [widgetConfigs, setWidgetConfigs] = useState<WidgetConfig[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [integrationDialog, setIntegrationDialog] = useState<{
+    isOpen: boolean
+    widgetType: string
+    url: string
+    editingWidgetId?: string // Added editingWidgetId to track which widget is being edited
+  }>({
+    isOpen: false,
+    widgetType: "",
+    url: "",
+  })
   const { toast } = useToast()
 
   useEffect(() => {
@@ -189,7 +359,10 @@ export function WidgetGrid({
   function createDefaultWidgetConfigs(accounts: SocialAccount[]): WidgetConfig[] {
     const socialConfigs: WidgetConfig[] = accounts.map((account, index) => ({
       id: generateUUID(),
-      type: account.platform === "calendly" || account.platform === "cafecito" ? "service" : "social",
+      type:
+        account.platform === "calendly" || account.platform === "cafecito" || account.platform === "github"
+          ? "service"
+          : "social",
       platform: account.platform,
       gridPosition: {
         x: (index % 4) * 2,
@@ -249,12 +422,29 @@ export function WidgetGrid({
       return
     }
 
+    if (INTEGRATED_WIDGETS[type as keyof typeof INTEGRATED_WIDGETS]) {
+      setIntegrationDialog({
+        isOpen: true,
+        widgetType: type,
+        url: "",
+      })
+      return
+    }
+
     const newWidget: WidgetConfig = {
       id: generateUUID(),
-      type: type === "profile" ? "profile" : type === "calendly" || type === "cafecito" ? "service" : "social",
+      type:
+        type === "profile"
+          ? "profile"
+          : type === "calendly" || type === "cafecito" || type === "github"
+            ? "service"
+            : "social",
       platform: type,
       gridPosition: { x: 0, y: 0 },
-      gridSize: { width: type === "cafecito" ? 2 : 2, height: type === "cafecito" ? 1 : 2 },
+      gridSize: {
+        width: type === "cafecito" ? 2 : 2,
+        height: type === "cafecito" ? 1 : 2,
+      },
       visible: true,
     }
 
@@ -263,6 +453,59 @@ export function WidgetGrid({
 
     toast({
       description: `${WIDGET_TYPES[type as keyof typeof WIDGET_TYPES]?.name || "Widget"} added`,
+    })
+  }
+
+  const handleIntegrationSubmit = async () => {
+    if (!integrationDialog.url.trim()) {
+      toast({
+        description: "Please enter a valid URL",
+        variant: "destructive",
+      })
+      return
+    }
+
+    if (integrationDialog.editingWidgetId) {
+      // Update existing widget
+      await handleConfigChange(integrationDialog.editingWidgetId, {
+        integrationUrl: integrationDialog.url,
+      })
+
+      toast({
+        description: `${WIDGET_TYPES[integrationDialog.widgetType as keyof typeof WIDGET_TYPES]?.name || "Widget"} updated`,
+      })
+    } else {
+      // Create new widget
+      const newWidget: WidgetConfig = {
+        id: generateUUID(),
+        type: "service",
+        platform: integrationDialog.widgetType,
+        gridPosition: { x: 0, y: 0 },
+        gridSize: {
+          width: integrationDialog.widgetType === "cafecito" ? 2 : 2,
+          height: integrationDialog.widgetType === "cafecito" ? 1 : 2,
+        },
+        visible: true,
+        integrationUrl: integrationDialog.url,
+      }
+
+      setWidgetConfigs((prev) => [...prev, newWidget])
+      await saveWidgetLayout(newWidget, profileId)
+
+      toast({
+        description: `${WIDGET_TYPES[integrationDialog.widgetType as keyof typeof WIDGET_TYPES]?.name || "Widget"} added`,
+      })
+    }
+
+    setIntegrationDialog({ isOpen: false, widgetType: "", url: "" }) // Reset editingWidgetId
+  }
+
+  const editWidget = (widget: WidgetConfig) => {
+    setIntegrationDialog({
+      isOpen: true,
+      widgetType: widget.platform,
+      url: widget.integrationUrl || "",
+      editingWidgetId: widget.id,
     })
   }
 
@@ -343,7 +586,6 @@ export function WidgetGrid({
   return (
     <div className="space-y-6">
       {!isEditMode ? (
-        // View mode: profile left, ENS right, grid below
         <div className="flex items-start justify-between mb-8">
           <div className="flex items-center gap-4 flex-1">
             <img
@@ -404,58 +646,129 @@ export function WidgetGrid({
         {isEditMode && (
           <div className="w-64 bg-card border rounded-lg p-4 h-fit">
             <h3 className="font-semibold mb-3">Available Widgets</h3>
-            <div className="space-y-2">
-              {Object.entries(WIDGET_TYPES)
-                .filter(([type]) => type !== "profile")
-                .map(([type, info]) => {
-                  const existingWidget = widgetConfigs.find((w) => w.platform === type)
+            <div className="space-y-3">
+              <div>
+                <h4 className="text-sm font-medium text-muted-foreground mb-2">Integrated Widgets</h4>
+                <div className="space-y-2">
+                  {Object.entries(INTEGRATED_WIDGETS).map(([type, info]) => {
+                    const existingWidget = widgetConfigs.find((w) => w.platform === type)
 
-                  return (
-                    <div key={type} className="space-y-2">
-                      <div className="flex items-center justify-between p-2 border rounded">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm">{info.icon}</span>
-                          <span className="text-sm font-medium">{info.name}</span>
-                        </div>
+                    return (
+                      <div key={type} className="space-y-2">
+                        <div className="flex items-center justify-between p-2 border rounded">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm">{info.icon}</span>
+                            <span className="text-sm font-medium">{info.name}</span>
+                            {existingWidget?.integrationUrl && <ExternalLink className="w-3 h-3 text-green-500" />}
+                          </div>
 
-                        <div className="flex items-center gap-1">
-                          {existingWidget &&
-                            existingWidget.visible &&
-                            WIDGET_COLORS[type as keyof typeof WIDGET_COLORS] && (
-                              <ColorPicker
-                                value={
-                                  existingWidget.customColor || WIDGET_COLORS[type as keyof typeof WIDGET_COLORS][0]
-                                }
-                                onChange={(color) => handleColorChange(existingWidget.id, color)}
-                                presetColors={WIDGET_COLORS[type as keyof typeof WIDGET_COLORS]}
+                          <div className="flex items-center gap-1">
+                            {existingWidget &&
+                              existingWidget.visible &&
+                              WIDGET_COLORS[type as keyof typeof WIDGET_COLORS] && (
+                                <ColorPicker
+                                  value={
+                                    existingWidget.customColor || WIDGET_COLORS[type as keyof typeof WIDGET_COLORS][0]
+                                  }
+                                  onChange={(color) => handleColorChange(existingWidget.id, color)}
+                                  presetColors={WIDGET_COLORS[type as keyof typeof WIDGET_COLORS]}
+                                  size="sm"
+                                />
+                              )}
+
+                            {existingWidget && (
+                              <Button
+                                variant="ghost"
                                 size="sm"
-                              />
+                                onClick={() => editWidget(existingWidget)}
+                                className="h-6 w-6 p-0"
+                                title="Edit integration"
+                              >
+                                <Pencil className="w-3 h-3" />
+                              </Button>
                             )}
 
-                          {existingWidget ? (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={async () => {
-                                await handleConfigChange(existingWidget.id, { visible: !existingWidget.visible })
-                                toast({
-                                  description: `${info.name} ${existingWidget.visible ? "hidden" : "shown"}`,
-                                })
-                              }}
-                              className="h-6 w-6 p-0"
-                            >
-                              {existingWidget.visible ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
-                            </Button>
-                          ) : (
-                            <Button variant="ghost" size="sm" onClick={() => addWidget(type)} className="h-6 w-6 p-0">
-                              <Plus className="w-3 h-3" />
-                            </Button>
-                          )}
+                            {existingWidget ? (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={async () => {
+                                  await handleConfigChange(existingWidget.id, { visible: !existingWidget.visible })
+                                  toast({
+                                    description: `${info.name} ${existingWidget.visible ? "hidden" : "shown"}`,
+                                  })
+                                }}
+                                className="h-6 w-6 p-0"
+                              >
+                                {existingWidget.visible ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
+                              </Button>
+                            ) : (
+                              <Button variant="ghost" size="sm" onClick={() => addWidget(type)} className="h-6 w-6 p-0">
+                                <Plus className="w-3 h-3" />
+                              </Button>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  )
-                })}
+                    )
+                  })}
+                </div>
+              </div>
+
+              <div>
+                <h4 className="text-sm font-medium text-muted-foreground mb-2">Preview Widgets</h4>
+                <div className="space-y-2">
+                  {Object.entries(PREVIEW_WIDGETS).map(([type, info]) => {
+                    const existingWidget = widgetConfigs.find((w) => w.platform === type)
+
+                    return (
+                      <div key={type} className="space-y-2">
+                        <div className="flex items-center justify-between p-2 border rounded">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm">{info.icon}</span>
+                            <span className="text-sm font-medium">{info.name}</span>
+                          </div>
+
+                          <div className="flex items-center gap-1">
+                            {existingWidget &&
+                              existingWidget.visible &&
+                              WIDGET_COLORS[type as keyof typeof WIDGET_COLORS] && (
+                                <ColorPicker
+                                  value={
+                                    existingWidget.customColor || WIDGET_COLORS[type as keyof typeof WIDGET_COLORS][0]
+                                  }
+                                  onChange={(color) => handleColorChange(existingWidget.id, color)}
+                                  presetColors={WIDGET_COLORS[type as keyof typeof WIDGET_COLORS]}
+                                  size="sm"
+                                />
+                              )}
+
+                            {existingWidget ? (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={async () => {
+                                  await handleConfigChange(existingWidget.id, { visible: !existingWidget.visible })
+                                  toast({
+                                    description: `${info.name} ${existingWidget.visible ? "hidden" : "shown"}`,
+                                  })
+                                }}
+                                className="h-6 w-6 p-0"
+                              >
+                                {existingWidget.visible ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
+                              </Button>
+                            ) : (
+                              <Button variant="ghost" size="sm" onClick={() => addWidget(type)} className="h-6 w-6 p-0">
+                                <Plus className="w-3 h-3" />
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
             </div>
           </div>
         )}
@@ -550,6 +863,16 @@ export function WidgetGrid({
                     allWidgets={widgetConfigs}
                   />
                 )
+              } else if (config.platform === "github") {
+                return (
+                  <GitHubWidget
+                    key={config.id}
+                    config={config}
+                    onConfigChange={handleConfigChange}
+                    isEditMode={isEditMode}
+                    allWidgets={widgetConfigs}
+                  />
+                )
               }
               return null
             })}
@@ -565,6 +888,48 @@ export function WidgetGrid({
           </div>
         </div>
       </div>
+
+      <Dialog
+        open={integrationDialog.isOpen}
+        onOpenChange={(open) => setIntegrationDialog((prev) => ({ ...prev, isOpen: open }))}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {integrationDialog.editingWidgetId ? "Edit" : "Connect"}{" "}
+              {WIDGET_TYPES[integrationDialog.widgetType as keyof typeof WIDGET_TYPES]?.name}
+            </DialogTitle>
+            <DialogDescription>
+              {integrationDialog.editingWidgetId ? "Update" : "Enter"} your{" "}
+              {WIDGET_TYPES[integrationDialog.widgetType as keyof typeof WIDGET_TYPES]?.name} URL to{" "}
+              {integrationDialog.editingWidgetId ? "update" : "connect"} your widget.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="integration-url">
+                {WIDGET_TYPES[integrationDialog.widgetType as keyof typeof WIDGET_TYPES]?.name} URL
+              </Label>
+              <Input
+                id="integration-url"
+                value={integrationDialog.url}
+                onChange={(e) => setIntegrationDialog((prev) => ({ ...prev, url: e.target.value }))}
+                placeholder={
+                  INTEGRATED_WIDGETS[integrationDialog.widgetType as keyof typeof INTEGRATED_WIDGETS]?.placeholder
+                }
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIntegrationDialog({ isOpen: false, widgetType: "", url: "" })}>
+              Cancel
+            </Button>
+            <Button onClick={handleIntegrationSubmit}>
+              {integrationDialog.editingWidgetId ? "Update Widget" : "Add Widget"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

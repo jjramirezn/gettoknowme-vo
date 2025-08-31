@@ -17,6 +17,7 @@ export interface WidgetLayoutDB {
   created_at: string
   updated_at: string
   custom_color?: string
+  integration_url?: string // Added integration_url field for integrated widgets
 }
 
 // Convert database format to widget config format
@@ -29,6 +30,7 @@ export function dbToWidgetConfig(dbLayout: WidgetLayoutDB): WidgetConfig {
     gridSize: { width: dbLayout.width || 2, height: dbLayout.height || 2 }, // Use actual dimensions from DB
     visible: dbLayout.is_visible,
     customColor: dbLayout.custom_color,
+    integrationUrl: dbLayout.integration_url, // Added integrationUrl mapping from database
   }
 }
 
@@ -49,6 +51,7 @@ export function widgetConfigToDb(
     size: "custom", // Keep for backward compatibility but not used
     is_visible: config.visible,
     custom_color: config.customColor,
+    integration_url: config.integrationUrl, // Added integrationUrl mapping to database
   }
 }
 
