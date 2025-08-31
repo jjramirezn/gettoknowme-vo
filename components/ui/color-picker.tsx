@@ -45,37 +45,36 @@ export function ColorPicker({
       <Popover open={isOpen} onOpenChange={setIsOpen}>
         <PopoverTrigger asChild>
           <button
-            className={`w-6 h-6 rounded-full border-2 border-gray-400 hover:border-gray-600 hover:scale-110 transition-all shadow-sm hover:shadow-md ${className}`}
+            className={`w-5 h-5 rounded-full border-2 border-gray-300 hover:scale-110 transition-transform ${className}`}
             style={{ backgroundColor: value }}
-            title="Click to change color"
+            title="Change color"
           />
         </PopoverTrigger>
         <PopoverContent className="w-48 p-3" align="start">
           <div className="space-y-2">
-            <h4 className="font-medium text-xs">Choose widget color</h4>
-            <div className="grid grid-cols-4 gap-1.5">
+            <h4 className="font-medium text-xs">Widget color</h4>
+            <div className="grid grid-cols-4 gap-1">
               {presetColors.map((color) => (
                 <button
                   key={color}
-                  className={`w-7 h-7 rounded border-2 transition-all hover:scale-110 hover:shadow-md ${
-                    value === color ? "border-primary ring-2 ring-primary/30" : "border-gray-300 hover:border-gray-400"
+                  className={`w-6 h-6 rounded border transition-all hover:scale-110 ${
+                    value === color ? "border-primary ring-1 ring-primary/20" : "border-border"
                   }`}
                   style={{ backgroundColor: color }}
                   onClick={() => {
                     onChange(color)
                     setIsOpen(false)
                   }}
-                  title={`Select ${color}`}
+                  title={color}
                 />
               ))}
             </div>
-            <div className="pt-2 border-t">
-              <label className="text-xs text-muted-foreground mb-1 block">Custom color:</label>
+            <div className="pt-1 border-t">
               <input
                 type="color"
                 value={value}
                 onChange={(e) => onChange(e.target.value)}
-                className="w-full h-7 rounded border-2 border-gray-300 cursor-pointer hover:border-gray-400"
+                className="w-full h-6 rounded border border-border cursor-pointer"
               />
             </div>
           </div>
@@ -87,10 +86,10 @@ export function ColorPicker({
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
       <PopoverTrigger asChild>
-        <Button variant="outline" size="sm" className={`flex items-center gap-2 hover:bg-gray-50 ${className}`}>
-          <div className="w-4 h-4 rounded-full border-2 border-gray-300" style={{ backgroundColor: value }} />
+        <Button variant="outline" size="sm" className={`flex items-center gap-2 ${className}`}>
+          <div className="w-4 h-4 rounded-full border border-border" style={{ backgroundColor: value }} />
           <Palette className="w-4 h-4" />
-          Change Background
+          Background
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-64 p-4" align="start">
@@ -100,25 +99,25 @@ export function ColorPicker({
             {presetColors.map((color) => (
               <button
                 key={color}
-                className={`w-9 h-9 rounded-lg border-2 transition-all hover:scale-110 hover:shadow-md ${
-                  value === color ? "border-primary ring-2 ring-primary/30" : "border-gray-300 hover:border-gray-400"
+                className={`w-8 h-8 rounded-lg border-2 transition-all hover:scale-110 ${
+                  value === color ? "border-primary ring-2 ring-primary/20" : "border-border"
                 }`}
                 style={{ backgroundColor: color }}
                 onClick={() => {
                   onChange(color)
                   setIsOpen(false)
                 }}
-                title={`Select ${color}`}
+                title={color}
               />
             ))}
           </div>
           <div className="pt-2 border-t">
-            <label className="text-xs text-muted-foreground mb-1 block">Custom color:</label>
+            <label className="text-xs text-muted-foreground">Custom color:</label>
             <input
               type="color"
               value={value}
               onChange={(e) => onChange(e.target.value)}
-              className="w-full h-8 rounded border-2 border-gray-300 cursor-pointer hover:border-gray-400"
+              className="w-full h-8 rounded border border-border cursor-pointer"
             />
           </div>
         </div>

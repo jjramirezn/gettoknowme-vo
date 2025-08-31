@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Eye, EyeOff, Plus, Calendar, Pencil } from "lucide-react"
+import { Eye, EyeOff, Plus, Calendar, ExternalLink, Pencil } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
-import { ColorPicker } from "@/components/ui/color-picker" // Added ColorPicker import
+import { ColorPicker } from "@/components/ui/color-picker"
 import {
   Dialog,
   DialogContent,
@@ -21,38 +21,18 @@ import { SocialWidget } from "@/components/widgets/social-widget"
 import { getWidgetLayouts, saveWidgetLayout } from "@/lib/database/widget-layouts"
 
 const PREVIEW_WIDGETS = {
-  instagram: { name: "Instagram", icon: "📷", color: "bg-gradient-to-br from-purple-500 to-pink-500" },
-  twitter: { name: "X (Twitter)", icon: "𝕏", color: "bg-black" },
-  youtube: { name: "YouTube", icon: "▶️", color: "bg-red-500" },
-  tiktok: { name: "TikTok", icon: "🎵", color: "bg-black" },
-  farcaster: { name: "Farcaster", icon: "🟣", color: "bg-purple-600" },
+  instagram: { name: "Instagram", icon: "📷" },
+  twitter: { name: "Twitter", icon: "🐦" },
+  tiktok: { name: "TikTok", icon: "🎵" },
+  farcaster: { name: "Farcaster", icon: "🟣" },
+  youtube: { name: "YouTube", icon: "📺" },
 }
 
 const INTEGRATED_WIDGETS = {
-  calendly: {
-    name: "Calendly",
-    icon: "📅",
-    color: "bg-blue-500",
-    placeholder: "https://calendly.com/your-username or your-username",
-  },
-  cafecito: {
-    name: "Cafecito",
-    icon: "☕",
-    color: "bg-yellow-600",
-    placeholder: "https://cafecito.app/your-username or your-username",
-  },
-  github: {
-    name: "GitHub",
-    icon: "⚡",
-    color: "bg-gray-800",
-    placeholder: "https://github.com/username or username",
-  },
-  medium: {
-    name: "Medium",
-    icon: "✍️",
-    color: "bg-green-600",
-    placeholder: "https://medium.com/@username or @username",
-  },
+  calendly: { name: "Calendly", icon: "📅", placeholder: "https://calendly.com/yourname" },
+  cafecito: { name: "Cafecito", icon: "☕", placeholder: "https://cafecito.app/yourname" },
+  github: { name: "GitHub", icon: "💻", placeholder: "https://github.com/username or just username" },
+  medium: { name: "Medium", icon: "📝", placeholder: "https://medium.com/@username or just username" },
 }
 
 const WIDGET_TYPES = {
@@ -436,6 +416,113 @@ function MediumWidget({
   )
 }
 
+const YouTubeWidget = ({ config, onConfigChange, isEditMode, allWidgets }: any) => {
+  const [videos, setVideos] = useState<any[]>([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const extractChannelName = (input: string): string => {
+    // Handle various YouTube URL formats
+    const patterns = [
+      /youtube\.com\/@([^/?]+)/,
+      /youtube\.com\/c\/([^/?]+)/,
+      /youtube\.com\/channel\/([^/?]+)/,
+      /youtube\.com\/user\/([^/?]+)/,
+    ]
+
+    for (const pattern of patterns) {
+      const match = input.match(pattern)
+      if (match) return match[1]
+    }
+
+    // If no URL pattern matches, assume it's a plain channel name
+    return input.replace("@", "")
+  }
+
+  useEffect(() => {
+    if (!config.integrationUrl) return
+
+    const fetchVideos = async () => {
+      setLoading(true)
+      setError(null)
+
+      try {
+        const channelName = extractChannelName(config.integrationUrl)
+        const response = await fetch(`/api/youtube-videos?channel=${encodeURIComponent(channelName)}`)
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch videos")
+        }
+
+        const data = await response.json()
+        setVideos(data.videos || [])
+      } catch (err) {
+        setError("Failed to load videos")
+        console.error("YouTube fetch error:", err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchVideos()
+  }, [config.integrationUrl])
+
+  const handleClick = () => {
+    if (config.integrationUrl) {
+      const channelName = extractChannelName(config.integrationUrl)
+      window.open(`https://youtube.com/@${channelName}`, "_blank")
+    }
+  }
+
+  return (
+    <WidgetBase config={config} onConfigChange={onConfigChange} isEditMode={isEditMode} allWidgets={allWidgets}>
+      <div className="h-full cursor-pointer hover:opacity-90 transition-opacity" onClick={handleClick}>
+        <div className="flex items-center gap-2 mb-3">
+          <div className="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
+            ▶
+          </div>
+          <div>
+            <div className="font-semibold text-sm">YouTube</div>
+            {videos.length > 0 && <div className="text-xs text-gray-600">{videos.length} recent videos</div>}
+          </div>
+        </div>
+
+        {loading && (
+          <div className="flex items-center justify-center h-20">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-red-500"></div>
+          </div>
+        )}
+
+        {error && <div className="text-red-500 text-xs text-center py-4">{error}</div>}
+
+        {!loading && !error && videos.length > 0 && (
+          <div className="space-y-2">
+            {videos.slice(0, 3).map((video, index) => (
+              <div key={index} className="flex gap-2 p-2 rounded-lg hover:bg-gray-50 transition-colors">
+                <div className="w-16 h-12 bg-gray-200 rounded flex-shrink-0 flex items-center justify-center">
+                  <span className="text-red-500 text-xs">▶</span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="font-medium text-xs leading-tight line-clamp-2">{video.title}</div>
+                  <div className="text-xs text-gray-500 mt-1">{new Date(video.publishedAt).toLocaleDateString()}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {!loading && !error && videos.length === 0 && config.integrationUrl && (
+          <div className="text-gray-500 text-xs text-center py-4">No videos found</div>
+        )}
+
+        {!config.integrationUrl && (
+          <div className="text-gray-500 text-xs text-center py-4">Configure YouTube channel</div>
+        )}
+      </div>
+    </WidgetBase>
+  )
+}
+
 interface WidgetGridProps {
   accounts: any[]
   profileData: ProfileData
@@ -510,7 +597,8 @@ export function WidgetGrid({
         account.platform === "calendly" ||
         account.platform === "cafecito" ||
         account.platform === "github" ||
-        account.platform === "medium"
+        account.platform === "medium" ||
+        account.platform === "youtube"
           ? "service"
           : "social",
       platform: account.platform,
@@ -583,7 +671,7 @@ export function WidgetGrid({
                   : "social",
       platform: type,
       gridPosition: { x: 0, y: 0 },
-      gridSize: { width: type === "cafecito" ? 2 : 2, height: type === "cafecito" ? 1 : 2 },
+      gridSize: { width: 2, height: 2 },
       visible: true,
       integrationUrl,
     }
@@ -645,7 +733,7 @@ export function WidgetGrid({
         platform: "Twitter",
         handle: "@yourhandle",
         followers: "8.2K followers",
-        icon: "𝕏",
+        icon: "🐦",
         color: "#1DA1F2",
         url: `https://twitter.com/yourhandle`,
       },
@@ -653,7 +741,7 @@ export function WidgetGrid({
         platform: "YouTube",
         handle: "Your Channel",
         followers: "5.8K subscribers",
-        icon: "▶️",
+        icon: "📺",
         color: "#FF0000",
         url: `https://youtube.com/@yourhandle`,
       },
@@ -661,7 +749,7 @@ export function WidgetGrid({
         platform: "GitHub",
         handle: "yourhandle",
         followers: "234 followers",
-        icon: "⚡",
+        icon: "💻",
         color: "#333333",
         url: `https://github.com/yourhandle`,
       },
@@ -685,7 +773,7 @@ export function WidgetGrid({
         platform: "Medium",
         handle: "@yourhandle",
         followers: "10 articles",
-        icon: "✍️",
+        icon: "📝",
         color: "#00AB6C",
         url: `https://medium.com/@yourhandle`,
       },
@@ -696,13 +784,6 @@ export function WidgetGrid({
 
   const handleColorChange = async (widgetId: string, color: string) => {
     await handleConfigChange(widgetId, { customColor: color })
-  }
-
-  const toggleWidgetVisibility = async (widgetId: string) => {
-    const widget = widgetConfigs.find((w) => w.id === widgetId)
-    if (widget) {
-      await handleConfigChange(widgetId, { visible: !widget.visible })
-    }
   }
 
   const gridWidgets = widgetConfigs.filter((w) => w.visible)
@@ -785,70 +866,66 @@ export function WidgetGrid({
             <h3 className="font-semibold mb-3">Available Widgets</h3>
             <div className="space-y-3">
               <div>
-                <h4 className="text-sm font-medium text-gray-700 mb-2">Integrated Widgets</h4>
+                <h4 className="text-sm font-medium text-muted-foreground mb-2">Integrated Widgets</h4>
                 <div className="space-y-2">
-                  {Object.entries(INTEGRATED_WIDGETS).map(([type, widget]) => {
+                  {Object.entries(INTEGRATED_WIDGETS).map(([type, info]) => {
                     const existingWidget = widgetConfigs.find((w) => w.platform === type)
+
                     return (
-                      <div key={type} className="flex items-center justify-between p-2 rounded-lg border bg-white">
-                        <div className="flex items-center gap-2">
-                          <div
-                            className={`w-6 h-6 rounded text-white text-xs flex items-center justify-center ${widget.color}`}
-                          >
-                            {widget.icon}
+                      <div key={type} className="space-y-2">
+                        <div className="flex items-center justify-between p-2 border rounded">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm">{info.icon}</span>
+                            <span className="text-sm font-medium">{info.name}</span>
+                            {existingWidget?.integrationUrl && <ExternalLink className="w-3 h-3 text-green-500" />}
                           </div>
-                          <span className="text-xs font-medium">{widget.name}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          {existingWidget && existingWidget.visible && (
-                            <ColorPicker
-                              value={
-                                existingWidget.customColor ||
-                                WIDGET_COLORS[type as keyof typeof WIDGET_COLORS]?.[0] ||
-                                "#3B82F6"
-                              }
-                              onChange={(color) => handleColorChange(existingWidget.id, color)}
-                              presetColors={WIDGET_COLORS[type as keyof typeof WIDGET_COLORS] || []}
-                              size="sm"
-                            />
-                          )}
-                          {existingWidget && (
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="h-6 w-6 p-0"
-                              onClick={() => editWidget(existingWidget)}
-                              title="Edit integration"
-                            >
-                              <Pencil className="h-3 w-3" />
-                            </Button>
-                          )}
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-6 w-6 p-0"
-                            onClick={() => {
-                              if (existingWidget) {
-                                toggleWidgetVisibility(existingWidget.id)
-                              } else {
-                                setIntegrationDialog({
-                                  isOpen: true,
-                                  widgetType: type,
-                                  url: "",
-                                })
-                              }
-                            }}
-                          >
-                            {existingWidget ? (
-                              existingWidget.visible ? (
-                                <Eye className="h-3 w-3" />
-                              ) : (
-                                <EyeOff className="h-3 w-3" />
-                              )
-                            ) : (
-                              <Plus className="h-3 w-3" />
+
+                          <div className="flex items-center gap-1">
+                            {existingWidget &&
+                              existingWidget.visible &&
+                              WIDGET_COLORS[type as keyof typeof WIDGET_COLORS] && (
+                                <ColorPicker
+                                  value={
+                                    existingWidget.customColor || WIDGET_COLORS[type as keyof typeof WIDGET_COLORS][0]
+                                  }
+                                  onChange={(color) => handleColorChange(existingWidget.id, color)}
+                                  presetColors={WIDGET_COLORS[type as keyof typeof WIDGET_COLORS]}
+                                  size="sm"
+                                />
+                              )}
+
+                            {existingWidget && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => editWidget(existingWidget)}
+                                className="h-6 w-6 p-0"
+                                title="Edit integration"
+                              >
+                                <Pencil className="w-3 h-3" />
+                              </Button>
                             )}
-                          </Button>
+
+                            {existingWidget ? (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={async () => {
+                                  await handleConfigChange(existingWidget.id, { visible: !existingWidget.visible })
+                                  toast({
+                                    description: `${info.name} ${existingWidget.visible ? "hidden" : "shown"}`,
+                                  })
+                                }}
+                                className="h-6 w-6 p-0"
+                              >
+                                {existingWidget.visible ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
+                              </Button>
+                            ) : (
+                              <Button variant="ghost" size="sm" onClick={() => addWidget(type)} className="h-6 w-6 p-0">
+                                <Plus className="w-3 h-3" />
+                              </Button>
+                            )}
+                          </div>
                         </div>
                       </div>
                     )
@@ -857,55 +934,65 @@ export function WidgetGrid({
               </div>
 
               <div>
-                <h4 className="text-sm font-medium text-gray-700 mb-2">Coming soon</h4>
+                <h4 className="text-sm font-medium text-muted-foreground mb-2">Coming soon widgets</h4>
                 <div className="space-y-2">
-                  {Object.entries(PREVIEW_WIDGETS).map(([type, widget]) => {
+                  {Object.entries(PREVIEW_WIDGETS).map(([type, info]) => {
                     const existingWidget = widgetConfigs.find((w) => w.platform === type)
+
                     return (
-                      <div key={type} className="flex items-center justify-between p-2 rounded-lg border bg-white">
-                        <div className="flex items-center gap-2">
-                          <div
-                            className={`w-6 h-6 rounded text-white text-xs flex items-center justify-center ${widget.color}`}
-                          >
-                            {widget.icon}
+                      <div key={type} className="space-y-2">
+                        <div className="flex items-center justify-between p-2 border rounded">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm">{info.icon}</span>
+                            <span className="text-sm font-medium">{info.name}</span>
                           </div>
-                          <span className="text-xs font-medium">{widget.name}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          {existingWidget && existingWidget.visible && (
-                            <ColorPicker
-                              value={
-                                existingWidget.customColor ||
-                                WIDGET_COLORS[type as keyof typeof WIDGET_COLORS]?.[0] ||
-                                "#3B82F6"
-                              }
-                              onChange={(color) => handleColorChange(existingWidget.id, color)}
-                              presetColors={WIDGET_COLORS[type as keyof typeof WIDGET_COLORS] || []}
-                              size="sm"
-                            />
-                          )}
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-6 w-6 p-0"
-                            onClick={() => {
-                              if (existingWidget) {
-                                toggleWidgetVisibility(existingWidget.id)
-                              } else {
-                                addWidget(type)
-                              }
-                            }}
-                          >
-                            {existingWidget ? (
-                              existingWidget.visible ? (
-                                <Eye className="h-3 w-3" />
-                              ) : (
-                                <EyeOff className="h-3 w-3" />
-                              )
-                            ) : (
-                              <Plus className="h-3 w-3" />
+
+                          <div className="flex items-center gap-1">
+                            {existingWidget &&
+                              existingWidget.visible &&
+                              WIDGET_COLORS[type as keyof typeof WIDGET_COLORS] && (
+                                <ColorPicker
+                                  value={
+                                    existingWidget.customColor || WIDGET_COLORS[type as keyof typeof WIDGET_COLORS][0]
+                                  }
+                                  onChange={(color) => handleColorChange(existingWidget.id, color)}
+                                  presetColors={WIDGET_COLORS[type as keyof typeof WIDGET_COLORS]}
+                                  size="sm"
+                                />
+                              )}
+
+                            {existingWidget && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => editWidget(existingWidget)}
+                                className="h-6 w-6 p-0"
+                                title="Edit integration"
+                              >
+                                <Pencil className="w-3 h-3" />
+                              </Button>
                             )}
-                          </Button>
+
+                            {existingWidget ? (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={async () => {
+                                  await handleConfigChange(existingWidget.id, { visible: !existingWidget.visible })
+                                  toast({
+                                    description: `${info.name} ${existingWidget.visible ? "hidden" : "shown"}`,
+                                  })
+                                }}
+                                className="h-6 w-6 p-0"
+                              >
+                                {existingWidget.visible ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
+                              </Button>
+                            ) : (
+                              <Button variant="ghost" size="sm" onClick={() => addWidget(type)} className="h-6 w-6 p-0">
+                                <Plus className="w-3 h-3" />
+                              </Button>
+                            )}
+                          </div>
                         </div>
                       </div>
                     )
@@ -968,14 +1055,21 @@ export function WidgetGrid({
             }}
           >
             {gridWidgets.map((config) => {
-              if (config.type === "social" && config.platform) {
+              if (config.type === "social") {
+                let account = accounts.find((a) => a.platform === config.platform)
+                if (!account) {
+                  console.log("[v0] No real account found for", config.platform, "using mock data")
+                  account = createMockAccount(config.platform)
+                }
+
                 return (
                   <SocialWidget
                     key={config.id}
                     config={config}
-                    account={accounts.find((a) => a.platform === config.platform) || createMockAccount(config.platform)}
-                    onConfigChange={(newConfig) => handleConfigChange(config.id, newConfig)}
+                    onConfigChange={handleConfigChange}
                     isEditMode={isEditMode}
+                    account={account}
+                    customColor={config.customColor}
                     allWidgets={widgetConfigs}
                   />
                 )
@@ -1012,6 +1106,16 @@ export function WidgetGrid({
               } else if (config.platform === "medium") {
                 return (
                   <MediumWidget
+                    key={config.id}
+                    config={config}
+                    onConfigChange={handleConfigChange}
+                    isEditMode={isEditMode}
+                    allWidgets={widgetConfigs}
+                  />
+                )
+              } else if (config.platform === "youtube") {
+                return (
+                  <YouTubeWidget
                     key={config.id}
                     config={config}
                     onConfigChange={handleConfigChange}
